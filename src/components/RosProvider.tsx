@@ -18,6 +18,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 import * as ROSLIB from "../roslib/index";
+import { CockpitWebSocket, type BridgeAddress } from "../roslib/CockpitWebSocket";
 
 export interface RosConnection {
     ros: ROSLIB.Ros | null;
@@ -28,6 +29,9 @@ export interface RosConnection {
 }
 
 const RETRY_DELAY_MS = 3000;
+// foxglove_bridge as seen from the Cockpit bridge on the rover: rover-cockpit and
+// rover-a1-platform share the host network, so it is on loopback.
+const BRIDGE: BridgeAddress = { address: "127.0.0.1", port: 8765 };
 const DISCONNECTED: RosConnection = { ros: null, connected: false, session: 0 };
 
 const RosContext = createContext<RosConnection>(DISCONNECTED);
@@ -36,28 +40,26 @@ export const useRos = () => useContext(RosContext);
 
 /**
  * Owns the page's single foxglove_bridge connection and reconnects every
- * RETRY_DELAY_MS until it is unmounted. Every tab shares it.
+ * RETRY_DELAY_MS until it is unmounted. Every tab shares it. The connection is
+ * tunnelled through the Cockpit session (CockpitWebSocket), so it works wherever
+ * the Cockpit page itself loads.
  */
-export const RosProvider = ({ url, children }: { url: string | null; children: React.ReactNode }) => {
+export const RosProvider = ({ children }: { children: React.ReactNode }) => {
     const [connection, setConnection] = useState<RosConnection>(DISCONNECTED);
 
     useEffect(() => {
-        if (!url) {
-            console.warn("WebSocket URL is not set correctly. Skipping WebSocket configuration.");
-            return;
-        }
-
-        const ros = new ROSLIB.Ros({});
+        const bridge = `${BRIDGE.address}:${BRIDGE.port}`;
+        const ros = new ROSLIB.Ros();
         let session = 0;
         let retry = true;
         let retryTimeout: ReturnType<typeof setTimeout> | undefined;
 
         const connect = () => {
             clearTimeout(retryTimeout);
-            ros.connect(url);
+            ros.connect(new CockpitWebSocket(BRIDGE));
 
             ros.on("connection", () => {
-                console.log("Connected to Foxglove bridge at " + url);
+                console.log(`Connected to Foxglove bridge at ${bridge} (via Cockpit)`);
                 session += 1;
                 setConnection({ ros, connected: true, session });
             });
@@ -86,7 +88,7 @@ export const RosProvider = ({ url, children }: { url: string | null; children: R
             ros.close();
             setConnection(DISCONNECTED);
         };
-    }, [url]);
+    }, []);
 
     return <RosContext.Provider value={connection}>{children}</RosContext.Provider>;
 };

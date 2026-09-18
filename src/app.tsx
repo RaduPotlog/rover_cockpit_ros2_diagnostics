@@ -32,7 +32,6 @@ import {
 import cockpit from 'cockpit';
 import { RosProvider } from "./components/RosProvider";
 import { useNamespace } from "./hooks/useNamespace";
-import { useWebSocketUrl } from "./hooks/useWebSocketUrl";
 import { ManualNamespace } from "./components/ManualNamespace";
 import { DiagnosticsTab } from "./diagnostics/DiagnosticsTab";
 import { NetworkingTab } from "./networking/NetworkingTab";
@@ -68,12 +67,11 @@ export const Application = () => {
         invalidNamespaceMessage,
         manualEntryRequired
     } = useNamespace();
-    const url = useWebSocketUrl(); // Use custom hook for WebSocket URL
     const [activeTab, setActiveTab] = useActiveTab();
     const namespaceValid = !invalidNamespaceMessage;
 
     return (
-        <RosProvider url={url}>
+        <RosProvider>
             <Page id="ros2-diag" className='no-masthead-sidebar'>
                 <PageSection>
                     <Stack hasGutter>

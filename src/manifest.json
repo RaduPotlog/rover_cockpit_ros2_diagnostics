@@ -15,5 +15,5 @@
         }
     },
 
-    "content-security-policy": "connect-src 'self' ws://*:8765"
+    "content-security-policy": "connect-src 'self'"
 }

@@ -29,6 +29,7 @@ import {
     type Channel,
     type ConnectionGraphUpdate,
     FoxgloveClient,
+    type IWebSocket,
     type MessageData,
     type Parameter,
     type ParameterValue,
@@ -37,7 +38,6 @@ import {
     type ServiceCallResponse,
 } from '@foxglove/ws-protocol';
 import EventEmitter from 'eventemitter3';
-import WebSocket from 'isomorphic-ws';
 
 export interface EventTypes {
   connection: () => void;
@@ -92,17 +92,10 @@ export class Impl {
     #callId = 0;
     #paramId = 0;
 
-    constructor(url: string) {
-        this.#client = new FoxgloveClient({
-            // TODO: "foxglove.sdk.v1" was added here manually because Foxglove switched the foxglove-bridge
-            // package for Jazzy from ros-foxglove-bridge repo (v0.8.5) which used "foxglove.websocket.v1"
-            // to their new foxglove-sdk version (v3.2.x) which uses "foxglove.sdk.v1" around September 2025,
-            // but the @foxglove/ws-protocol npm package has not yet been updated to include this new
-            // subprotocol. Once that package is updated, or a new alternative is released, "foxglove.sdk.v1"
-            // may be removed from here and adjusted accordingly. As far as I can tell, it seems that
-            // the underlying protocols are compatible for our use case, and is effectively only a name change.
-            ws: new WebSocket(url, ["foxglove.sdk.v1", FoxgloveClient.SUPPORTED_SUBPROTOCOL]),
-        });
+    constructor(ws: IWebSocket) {
+        // The transport (subprotocol negotiation included) is the caller's choice; the
+        // page uses CockpitWebSocket, which tunnels through the Cockpit session.
+        this.#client = new FoxgloveClient({ ws });
 
         const open = new Promise<void>((resolve) => {
             this.#client.on('open', resolve);

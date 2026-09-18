@@ -21,15 +21,16 @@
  */
 
 import type EventEmitter from 'eventemitter3';
+import type { IWebSocket } from '@foxglove/ws-protocol';
 
 import { type EventTypes, Impl } from './Impl';
 
 export class Ros {
     #rosImpl: Impl | undefined;
 
-    constructor(readonly options: { readonly url?: string }) {
-        if (options.url) {
-            this.connect(options.url);
+    constructor(ws?: IWebSocket) {
+        if (ws) {
+            this.connect(ws);
         }
     }
 
@@ -54,8 +55,9 @@ export class Ros {
         return this;
     }
 
-    connect(url: string) {
-        this.#rosImpl = new Impl(url);
+    /** Start a bridge session over `ws` (e.g. a CockpitWebSocket). */
+    connect(ws: IWebSocket) {
+        this.#rosImpl = new Impl(ws);
     }
 
     close() {

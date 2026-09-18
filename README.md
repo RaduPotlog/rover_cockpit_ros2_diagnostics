@@ -52,6 +52,13 @@ The following instructions should be completed on the computer that is to be mon
 The page has three tabs (the selected one is kept in the URL: `#/`, `#/networking`, `#/leds`).
 They share one foxglove_bridge connection.
 
+The browser never connects to foxglove_bridge directly. The Cockpit bridge opens a TCP
+`stream` channel to `127.0.0.1:8765` on the robot, and the page runs the WebSocket client
+protocol over it (`src/roslib/CockpitWebSocket.ts`, `src/roslib/wsFraming.ts`). This is
+needed because Cockpit's Python bridge has no WebSocket channel. As a result, the ROS data
+travels inside the Cockpit session: it works behind https proxies, such as the balena Public
+Device URL, and port 8765 only has to be reachable on the robot itself.
+
 - **ROS 2 Diagnostics**: the aggregated `<namespace>/diagnostics_agg` tree described above.
 - **ROS 2 Networking**: ICMP status, round-trip time and a 60-probe history for every
   interface in the rover topology. The browser runs `ping -n -c 1 -W 1 <address>` through
