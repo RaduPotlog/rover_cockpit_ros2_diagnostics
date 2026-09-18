@@ -137,10 +137,7 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
                 <FlexItem>
                     <Title headingLevel="h2" size="xl">{_("ROS 2 LEDs")}</Title>
                     <Content component="small">
-                        {_("Animations played by rover_led on the bumper lights, following the ")}
-                        <a href={(REFERENCE as { source?: string }).source} target="_blank" rel="noopener noreferrer">
-                            {_("Husarion LED animation table")}
-                        </a>.
+                        {_("Animations played by rover_led on the bumper lights.")}
                     </Content>
                 </FlexItem>
                 <FlexItem>
