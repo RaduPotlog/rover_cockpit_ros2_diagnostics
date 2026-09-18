@@ -44,7 +44,7 @@ import cockpit from 'cockpit';
 import { useRos } from '../components/RosProvider';
 import { AnimationTable, LayerTable, LedStrips, NowPlaying, type AnimationControls, type AnimationRef } from './LedViews';
 import { useLedState } from './useLedState';
-import type { LedReference } from './model';
+import type { Led0Side, LedReference } from './model';
 import referenceJson from './led_reference.json';
 
 const _ = cockpit.gettext;
@@ -52,6 +52,10 @@ const _ = cockpit.gettext;
 // Module constants: stable identities, so the subscription effect never restarts on render.
 const REFERENCE = referenceJson as LedReference;
 const CHANNELS = [1, 2] as const;
+// Each panel is drawn as seen standing at its bumper. Both are 2 x 20 serpentines with
+// LED 0 on the robot's right: that is the viewer's left at the front (0 … 19 over
+// 39 … 20) and the viewer's right at the rear (19 … 0 over 20 … 39).
+const LED0_SIDE: Readonly<Record<number, Led0Side>> = { 1: "left", 2: "right" };
 
 interface ServiceResult { success: boolean; message: string }
 interface Feedback { variant: "success" | "danger"; title: string; detail?: string }
@@ -225,7 +229,7 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
                     </Card>
                 </GridItem>
             </Grid>
-            <LedStrips snapshot={snapshot} />
+            <LedStrips snapshot={snapshot} led0Side={LED0_SIDE} />
             <LayerTable snapshot={snapshot} controls={controls} />
             <AnimationTable snapshot={snapshot} controls={controls} />
         </Stack>

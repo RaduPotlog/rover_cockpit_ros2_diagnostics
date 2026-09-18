@@ -130,19 +130,24 @@ export const decodeRgba = (msg: { data?: ArrayLike<number> }): Rgba[] => {
 
 export interface PanelLed { index: number; led: Rgba }
 
+/** Which end of the drawn panel LED 0 is on, as seen standing at that bumper. */
+export type Led0Side = "left" | "right";
+
 /**
  * A panel's LEDs in the order they are drawn, one array per physical row. A straight
  * strip (rows = 1) is one row with LED 0 on the left. A strip folded into serpentine rows
- * is drawn as seen from behind the rear bumper: row 0 has LED 0 on the right (19 … 0),
- * and each following row turns back (20 … 39).
+ * starts at LED 0 on led0Side and each following row turns back: the front (seen from
+ * the front, LED 0 left) is 0 … 19 over 39 … 20, the rear (seen from behind, LED 0
+ * right) is 19 … 0 over 20 … 39.
  */
-export const panelRows = (leds: Rgba[], rows: number): PanelLed[][] => {
+export const panelRows = (leds: Rgba[], rows: number, led0Side: Led0Side = "left"): PanelLed[][] => {
     const all = leds.map((led, index) => ({ index, led }));
     if (rows <= 1 || leds.length % rows !== 0) return [all];
     const perRow = leds.length / rows;
     return [...Array(rows).keys()].map(row => {
         const part = all.slice(row * perRow, (row + 1) * perRow);
-        return row % 2 === 0 ? part.reverse() : part;
+        // Even rows run away from LED 0's side, odd rows turn back towards it.
+        return (row % 2 === 0) === (led0Side === "right") ? part.reverse() : part;
     });
 };
 

@@ -34,7 +34,7 @@ import { PlayIcon, StopIcon } from "@patternfly/react-icons";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 
 import cockpit from 'cockpit';
-import { ledColor, panelRows, type AnimationRow, type LedSnapshot } from './model';
+import { ledColor, panelRows, type AnimationRow, type Led0Side, type LedSnapshot } from './model';
 
 const _ = cockpit.gettext;
 
@@ -108,7 +108,8 @@ const StopButton = ({ animation, controls }: { animation: AnimationRef; controls
     </Button>
 );
 
-export const LedStrips = ({ snapshot }: { snapshot: LedSnapshot }) => (
+/** led0Side: per channel, which end LED 0 is drawn on (default left). */
+export const LedStrips = ({ snapshot, led0Side }: { snapshot: LedSnapshot; led0Side: Readonly<Record<number, Led0Side>> }) => (
     <Card>
         <CardHeader>
             <CardTitle>{_("LED strips")}</CardTitle>
@@ -129,7 +130,7 @@ export const LedStrips = ({ snapshot }: { snapshot: LedSnapshot }) => (
                         </Content>
                         <div className="led-strip-leds" role="img" aria-label={cockpit.format(_("Channel $0 LED colours"), panel.channel)}>
                             {panel.leds
-                                ? panelRows(panel.leds, panel.rows).map(row => (
+                                ? panelRows(panel.leds, panel.rows, led0Side[panel.channel]).map(row => (
                                     <div className="led-strip-row" key={row[0]?.index ?? 0}>
                                         {panel.rows > 1 && <span className="led-strip-index">{row[0]?.index}</span>}
                                         {row.map(({ index, led }) => (

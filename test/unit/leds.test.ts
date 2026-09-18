@@ -100,12 +100,19 @@ test('draws a straight strip as one row, LED 0 on the left', () => {
     assert.deepEqual(panelRows(leds, 1).map(row => row.map(item => item.index)), [[0, 1, 2, 3]]);
 });
 
+test('draws the front serpentine panel as 0…19 over 39…20', () => {
+    const leds = [...Array(40).keys()].map(i => [i, 0, 0, 255] as [number, number, number, number]);
+    const rows = panelRows(leds, 2, 'left').map(row => row.map(item => item.index));
+    assert.deepEqual(rows[0], [...Array(20).keys()]);
+    assert.deepEqual(rows[1], [...Array(20).keys()].map(i => 39 - i));
+});
+
 test('draws the rear serpentine panel as 19…0 over 20…39', () => {
     const leds = [...Array(40).keys()].map(i => [i, 0, 0, 255] as [number, number, number, number]);
-    const rows = panelRows(leds, 2).map(row => row.map(item => item.index));
+    const rows = panelRows(leds, 2, 'right').map(row => row.map(item => item.index));
     assert.deepEqual(rows[0], [...Array(20).keys()].reverse());
     assert.deepEqual(rows[1], [...Array(20).keys()].map(i => 20 + i));
-    assert.deepEqual(panelRows(leds, 2)[0][0].led, [19, 0, 0, 255]);
+    assert.deepEqual(panelRows(leds, 2, 'right')[0][0].led, [19, 0, 0, 255]);
 });
 
 test('decodes rgba8 frames into one rgba tuple per LED', () => {
