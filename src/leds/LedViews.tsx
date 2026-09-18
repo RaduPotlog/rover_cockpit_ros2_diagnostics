@@ -34,7 +34,7 @@ import { PlayIcon, StopIcon } from "@patternfly/react-icons";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 
 import cockpit from 'cockpit';
-import { ledColor, type AnimationRow, type LedSnapshot } from './model';
+import { ledColor, panelRows, type AnimationRow, type LedSnapshot } from './model';
 
 const _ = cockpit.gettext;
 
@@ -129,13 +129,19 @@ export const LedStrips = ({ snapshot }: { snapshot: LedSnapshot }) => (
                         </Content>
                         <div className="led-strip-leds" role="img" aria-label={cockpit.format(_("Channel $0 LED colours"), panel.channel)}>
                             {panel.leds
-                                ? panel.leds.map((led, i) => (
-                                    <span
-                                        key={i}
-                                        className="led-strip-led"
-                                        style={{ "--led-color": ledColor(led, snapshot.brightness ?? 1) } as React.CSSProperties}
-                                        title={`LED ${i}: rgba(${led.join(", ")})`}
-                                    />
+                                ? panelRows(panel.leds, panel.rows).map(row => (
+                                    <div className="led-strip-row" key={row[0]?.index ?? 0}>
+                                        {panel.rows > 1 && <span className="led-strip-index">{row[0]?.index}</span>}
+                                        {row.map(({ index, led }) => (
+                                            <span
+                                                key={index}
+                                                className="led-strip-led"
+                                                style={{ "--led-color": ledColor(led, snapshot.brightness ?? 1) } as React.CSSProperties}
+                                                title={`LED ${index}: rgba(${led.join(", ")})`}
+                                            />
+                                        ))}
+                                        {panel.rows > 1 && <span className="led-strip-index">{row[row.length - 1]?.index}</span>}
+                                    </div>
                                 ))
                                 : <Content component="small">{_("No frame received")}</Content>}
                         </div>

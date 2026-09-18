@@ -7,6 +7,7 @@ import {
     decodeRgba,
     ledColor,
     ledSnapshot,
+    panelRows,
     type LedInputs,
     type LedLayerStateMsg,
     type LedReference,
@@ -72,7 +73,7 @@ test('reports the highest-priority playing layer on top', () => {
 
 test('drops state and frames that stopped arriving', () => {
     const state: LedStateMsg = { segments: [segment('front_1', 1, { 3: { id: 0, name: 'E_STOP' } })] };
-    const frames = new Map([[1, { leds: decodeRgba({ data: Uint8Array.from([255, 0, 0, 255]) }), at: NOW }], [2, null]]);
+    const frames = new Map([[1, { leds: decodeRgba({ data: Uint8Array.from([255, 0, 0, 255]) }), rows: 1, at: NOW }], [2, null]]);
     const snapshot = ledSnapshot(inputs({ state, stateAt: NOW, frames }), REFERENCE, NOW + 2500);
 
     assert.equal(snapshot.stale, true);
@@ -83,9 +84,28 @@ test('drops state and frames that stopped arriving', () => {
 });
 
 test('keeps fresh frames per channel', () => {
-    const frames = new Map([[1, { leds: decodeRgba({ data: Uint8Array.from([1, 2, 3, 4]) }), at: NOW }], [2, null]]);
+    const frames = new Map([
+        [1, { leds: decodeRgba({ data: Uint8Array.from([1, 2, 3, 4]) }), rows: 1, at: NOW }],
+        [2, { leds: decodeRgba({ data: Uint8Array.from([5, 6, 7, 8, 9, 10, 11, 12]) }), rows: 2, at: NOW - 5000 }],
+    ]);
     const snapshot = ledSnapshot(inputs({ frames }), REFERENCE, NOW + 100);
-    assert.deepEqual(snapshot.panels, [{ channel: 1, leds: [[1, 2, 3, 4]] }, { channel: 2, leds: null }]);
+    assert.deepEqual(snapshot.panels, [
+        { channel: 1, leds: [[1, 2, 3, 4]], rows: 1 },
+        { channel: 2, leds: null, rows: 2 },
+    ]);
+});
+
+test('draws a straight strip as one row, LED 0 on the left', () => {
+    const leds = [...Array(4).keys()].map(i => [i, 0, 0, 255] as [number, number, number, number]);
+    assert.deepEqual(panelRows(leds, 1).map(row => row.map(item => item.index)), [[0, 1, 2, 3]]);
+});
+
+test('draws the rear serpentine panel as 19…0 over 20…39', () => {
+    const leds = [...Array(40).keys()].map(i => [i, 0, 0, 255] as [number, number, number, number]);
+    const rows = panelRows(leds, 2).map(row => row.map(item => item.index));
+    assert.deepEqual(rows[0], [...Array(20).keys()].reverse());
+    assert.deepEqual(rows[1], [...Array(20).keys()].map(i => 20 + i));
+    assert.deepEqual(panelRows(leds, 2)[0][0].led, [19, 0, 0, 255]);
 });
 
 test('decodes rgba8 frames into one rgba tuple per LED', () => {

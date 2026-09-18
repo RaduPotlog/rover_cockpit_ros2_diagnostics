@@ -32,7 +32,7 @@ import {
 
 const REFRESH_MS = 500;
 
-interface ImageMsg { data: Uint8Array }
+interface ImageMsg { data: Uint8Array; height?: number }
 
 /**
  * Follow rover_led through the shared bridge connection and return a snapshot,
@@ -68,7 +68,7 @@ export const useLedState = (
 
         const refresh = () => {
             for (const [channel, raw] of rawFrames) {
-                inputs.frames.set(channel, { leds: decodeRgba(raw.msg) as Rgba[], at: raw.at });
+                inputs.frames.set(channel, { leds: decodeRgba(raw.msg) as Rgba[], rows: raw.msg.height || 1, at: raw.at });
             }
             rawFrames.clear();
             setSnapshot(ledSnapshot(inputs, reference, Date.now()));

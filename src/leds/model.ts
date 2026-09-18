@@ -20,7 +20,8 @@
  *
  * rover_led_controller publishes the loaded animations once on <ns>/led/animations
  * (latched), what every priority layer plays on <ns>/led/state (5 Hz) and one RGBA
- * frame per panel on <ns>/led/channel_<n>_frame (50 Hz). rover_led_driver reports the
+ * frame per panel on <ns>/led/channel_<n>_frame (50 Hz), in wire order with one image row
+ * per serpentine row of the panel. rover_led_driver reports the
  * global brightness it applies on <ns>/led/brightness (latched). The snapshot merges that
  * with the Husarion reference table so animations the robot has not loaded still
  * show up, marked as not configured.
@@ -77,7 +78,7 @@ export interface LedInputs {
     catalog: LedAnimationInfoMsg[] | null;
     state: LedStateMsg | null;
     stateAt: number | null;
-    frames: Map<number, { leds: Rgba[]; at: number } | null>;
+    frames: Map<number, { leds: Rgba[]; rows: number; at: number } | null>;
     brightness: number | null;
 }
 
@@ -88,7 +89,7 @@ export interface LedSnapshot {
     layers: LayerRow[];
     segments: { name: string; channel: number }[];
     animations: AnimationRow[];
-    panels: { channel: number; leds: Rgba[] | null }[];
+    panels: { channel: number; leds: Rgba[] | null; rows: number }[];
     brightness: number | null; // null until rover_led_driver reports it
 }
 
@@ -125,6 +126,24 @@ export const decodeRgba = (msg: { data?: ArrayLike<number> }): Rgba[] => {
         leds.push([bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3]]);
     }
     return leds;
+};
+
+export interface PanelLed { index: number; led: Rgba }
+
+/**
+ * A panel's LEDs in the order they are drawn, one array per physical row. A straight
+ * strip (rows = 1) is one row with LED 0 on the left. A strip folded into serpentine rows
+ * is drawn as seen from behind the rear bumper: row 0 has LED 0 on the right (19 … 0),
+ * and each following row turns back (20 … 39).
+ */
+export const panelRows = (leds: Rgba[], rows: number): PanelLed[][] => {
+    const all = leds.map((led, index) => ({ index, led }));
+    if (rows <= 1 || leds.length % rows !== 0) return [all];
+    const perRow = leds.length / rows;
+    return [...Array(rows).keys()].map(row => {
+        const part = all.slice(row * perRow, (row + 1) * perRow);
+        return row % 2 === 0 ? part.reverse() : part;
+    });
 };
 
 /**
@@ -185,7 +204,9 @@ export const ledSnapshot = (
         segments: segments?.map(({ name, channel }) => ({ name, channel })) ?? [],
         animations: animationRows(reference, inputs.catalog, layers),
         panels: [...inputs.frames].map(([channel, frame]) => ({
-            channel, leds: frame && fresh(frame.at, now, staleMs) ? frame.leds : null,
+            channel,
+            leds: frame && fresh(frame.at, now, staleMs) ? frame.leds : null,
+            rows: frame?.rows ?? 1,
         })),
         brightness: inputs.brightness,
     };
