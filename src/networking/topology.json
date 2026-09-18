@@ -1,0 +1,39 @@
+{
+  "name": "Rover-A1-001 Networking",
+  "viewBox": [0, 0, 1000, 470],
+  "nodes": [
+    {"id": "tekwill-wifi", "name": "TEKWILL-WIFI", "model": "WRT300N", "kind": "wireless-router", "x": 115, "y": 95},
+    {"id": "rutx11", "name": "RUTX11", "model": "2911", "kind": "router", "x": 335, "y": 95, "device": "rutx11"},
+    {"id": "ros-controller", "name": "ROS_CONTROLLER", "model": "2911", "kind": "router", "x": 605, "y": 95, "device": "ros-controller"},
+    {"id": "safety-plc", "name": "SAFETY_PLC", "model": "PC-PT", "kind": "pc", "x": 850, "y": 95, "device": "safety-plc"},
+    {"id": "rear-led-bms-ble-reader", "name": "REAR_LED_BMS_BLE_READER", "model": "PC-PT", "kind": "pc", "x": 335, "y": 375, "device": "rear-led-bms-ble-reader"},
+    {"id": "lidar", "name": "LIDAR", "model": "RS16", "kind": "lidar", "x": 115, "y": 375, "device": "lidar"}
+  ],
+  "links": [
+    {
+      "medium": "wireless",
+      "a": {"node": "tekwill-wifi"},
+      "b": {"node": "rutx11", "interface": "WAN"}
+    },
+    {
+      "cable": "cross",
+      "a": {"node": "rutx11", "port": "GigabitEthernet0/1", "interface": "LAN"},
+      "b": {"node": "ros-controller", "port": "GigabitEthernet0/0", "interface": "ETH1"}
+    },
+    {
+      "medium": "wireless",
+      "a": {"node": "rutx11", "interface": "WLAN"},
+      "b": {"node": "rear-led-bms-ble-reader", "interface": "WLAN"}
+    },
+    {
+      "cable": "cross",
+      "a": {"node": "ros-controller", "port": "GigabitEthernet0/1", "interface": "ETH0"},
+      "b": {"node": "safety-plc", "port": "FastEthernet0", "interface": "ETH0"}
+    },
+    {
+      "cable": "straight",
+      "a": {"node": "rutx11", "port": "GigabitEthernet0/1", "interface": "LAN"},
+      "b": {"node": "lidar", "port": "FastEthernet0", "interface": "ETH0"}
+    }
+  ]
+}

@@ -8,7 +8,7 @@
             "label": "ROS 2 diagnostics",
             "keywords": [
                 {
-                    "matches": ["robot", "health", "status"]
+                    "matches": ["robot", "health", "status", "network", "ping", "led"]
                 }
             ],
             "order": 105

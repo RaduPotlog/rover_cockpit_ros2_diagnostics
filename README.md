@@ -47,6 +47,28 @@ The following instructions should be completed on the computer that is to be mon
 
 3. Go to the ROS 2 Diagnostics tab.
 
+## Rover A1 tabs
+
+The page has three tabs (the selected one is kept in the URL: `#/`, `#/networking`, `#/leds`).
+They share one foxglove_bridge connection.
+
+- **ROS 2 Diagnostics**: the aggregated `<namespace>/diagnostics_agg` tree described above.
+- **ROS 2 Networking**: ICMP status, round-trip time and a 60-probe history for every
+  interface in the rover topology. The browser runs `ping -n -c 1 -W 1 <address>` through
+  `cockpit.spawn` every 5 seconds, and only while the tab is open. That needs `ping` on the
+  Cockpit host and `CAP_NET_RAW`. Devices and the drawing come from
+  `src/networking/devices.json` and `src/networking/topology.json`. Click a device in the
+  topology to open its history. (Ported from `rover_network_monitor`.)
+- **ROS 2 LEDs**: live `rover_led` state:
+  - the animation on top
+  - per-LED colours of both strips
+  - the priority layers
+  - the animation table, which merges `<namespace>/led/animations` with `src/leds/led_reference.json`
+
+  The controls call `<namespace>/led/set_animation` (Play, with a repeating switch and an
+  optional param) and `<namespace>/led/set_brightness` through the bridge's `services`
+  capability. They are enabled whenever the bridge is connected and advertises the service.
+
 # Development and Source Instructions
 
 ## Development dependencies
@@ -54,6 +76,13 @@ The following instructions should be completed on the computer that is to be mon
 On Ubuntu:
 
     sudo apt install gettext nodejs npm make
+
+## Unit tests
+
+The pure models (`src/networking/model.ts`, `src/leds/model.ts`) have unit tests that run on
+Node's built-in test runner. They need Node 23.6 or newer for type stripping:
+
+    npm test
 
 ## Getting and building the source
 

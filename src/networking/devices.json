@@ -1,0 +1,45 @@
+[
+  {
+    "id": "rutx11",
+    "name": "RUTX11",
+    "role": "Edge router",
+    "interfaces": [
+      {"name": "WAN", "address": "172.22.100.97"},
+      {"name": "LAN", "address": "192.168.1.1"},
+      {"name": "WLAN", "address": "192.168.77.1"}
+    ]
+  },
+  {
+    "id": "rear-led-bms-ble-reader",
+    "name": "REAR_LED_BMS_BLE_READER",
+    "role": "Rear LED, BMS and BLE reader controller",
+    "interfaces": [
+      {"name": "WLAN", "address": "192.168.77.201"}
+    ]
+  },
+  {
+    "id": "ros-controller",
+    "name": "ROS_CONTROLLER",
+    "role": "Rover ROS 2 controller",
+    "interfaces": [
+      {"name": "ETH1", "address": "192.168.1.201"},
+      {"name": "ETH0", "address": "192.168.88.10"}
+    ]
+  },
+  {
+    "id": "safety-plc",
+    "name": "SAFETY_PLC",
+    "role": "Safety PLC",
+    "interfaces": [
+      {"name": "ETH0", "address": "192.168.88.11"}
+    ]
+  },
+  {
+    "id": "lidar",
+    "name": "LIDAR",
+    "role": "RoboSense RS16 LiDAR",
+    "interfaces": [
+      {"name": "ETH0", "address": "192.168.1.200"}
+    ]
+  }
+]

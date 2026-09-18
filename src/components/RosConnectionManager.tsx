@@ -28,12 +28,11 @@ import {
 
 import { DiagnosticsEntry, DiagnosticsStatus } from "../interfaces";
 import * as ROSLIB from "../roslib/index";
+import { useRos } from "./RosProvider";
 
 interface RosConnectionManagerProps {
     namespace: string;
-    url: string | null;
     onDiagnosticsUpdate: (diagnosticsStatus: DiagnosticsStatus) => void;
-    onConnectionStatusChange: (connected: boolean) => void;
     onClearHistory: () => void;
 }
 
@@ -120,125 +119,79 @@ const buildDiagnosticsTree = (diagnostics: any[]): DiagnosticsEntry[] => {
 
 export const RosConnectionManager: React.FC<RosConnectionManagerProps> = ({
     namespace,
-    url,
     onDiagnosticsUpdate,
-    onConnectionStatusChange,
     onClearHistory
 }) => {
-    const staleTimeoutId = useRef(0);
-    const retryTimeoutId = useRef(0);
+    const { ros, connected, session } = useRos();
+    const staleTimeoutId = useRef<ReturnType<typeof setTimeout>>();
 
     useEffect(() => {
-        if (!url) {
-            console.warn("WebSocket URL is not set correctly. Skipping WebSocket configuration.");
-            return;
-        }
+        // Whatever was shown belongs to the previous connection (or namespace).
+        onClearHistory();
+        if (!ros || !connected) return;
 
-        console.log(`Creating new connection to ${url} for namespace ${namespace}`);
-        const ros = new ROSLIB.Ros({ url });
-
+        const timeoutDuration = 5000; // 5 seconds
         const diagnosticsTopic = new ROSLIB.Topic({
             ros,
             name: `${namespace}/diagnostics_agg`,
             messageType: "diagnostic_msgs/DiagnosticArray",
         });
 
-        const retryDelay = 3000; // 3 seconds
-        const timeoutDuration = 5000; // 5 seconds
-        let retryConnection = true;
-
-        const connectToWebSocket = () => {
+        diagnosticsTopic.subscribe((message) => {
+            // Clear the timeout if a new message is received
             clearTimeout(staleTimeoutId.current);
-            clearTimeout(retryTimeoutId.current);
-            ros.connect(url);
 
-            ros.on("connection", () => {
-                onClearHistory();
-                console.log("Connected to Foxglove bridge at " + url);
-                onConnectionStatusChange(true);
+            // Process incoming diagnostics messages
+            if (Array.isArray(message.status)) {
+                const diagnosticsTree = buildDiagnosticsTree(
+                    message.status.map(({ name, message, level, hardware_id, values }) => ({
+                        name,
+                        message,
+                        level: level !== undefined ? level : -1,
+                        hardware_id,
+                        values,
+                    }))
+                );
 
-                diagnosticsTopic.subscribe((message) => {
-                    // Clear the timeout if a new message is received
-                    clearTimeout(staleTimeoutId.current);
+                // Calculate overall level from diagnostics tree
+                const overallLevel = calculateOverallLevel(diagnosticsTree);
 
-                    // Process incoming diagnostics messages
-                    if (Array.isArray(message.status)) {
-                        const diagnosticsTree = buildDiagnosticsTree(
-                            message.status.map(({ name, message, level, hardware_id, values }) => ({
-                                name,
-                                message,
-                                level: level !== undefined ? level : -1,
-                                hardware_id,
-                                values,
-                            }))
-                        );
-
-                        // Calculate overall level from diagnostics tree
-                        const overallLevel = calculateOverallLevel(diagnosticsTree);
-
-                        // Extract timestamp from ROS message header
-                        let timestamp = Date.now(); // Default fallback
-                        if (message.header && message.header.stamp) {
-                            // Convert ROS time (sec + nanosec) to JavaScript timestamp (milliseconds)
-                            const sec = message.header.stamp.sec || 0;
-                            const nanosec = message.header.stamp.nanosec || 0;
-                            timestamp = sec * 1000 + Math.round(nanosec / 1000000);
-                            // console.log(`Extracted timestamp from ROS message: ${new Date(timestamp).toISOString()}`);
-                        } else {
-                            console.log("No header.stamp found in message, using current time");
-                        }
-
-                        // Create DiagStatus object
-                        const diagStatus: DiagnosticsStatus = {
-                            timestamp,
-                            level: overallLevel,
-                            diagnostics: diagnosticsTree
-                        };
-
-                        onDiagnosticsUpdate(diagStatus);
-                    } else {
-                        console.warn("Unexpected diagnostics data format:", message);
-                    }
-
-                    // Set a timeout to clear stale diagnostics if no new message is received
-                    staleTimeoutId.current = setTimeout(() => {
-                        console.warn("No diagnostics message received for 5 seconds. Clearing stale diagnostics.");
-                        onClearHistory();
-                    }, timeoutDuration);
-                });
-                console.log(`Subscribed to topic: ${diagnosticsTopic.name}`);
-            });
-
-            ros.on("error", (error) => {
-                console.error("Error connecting to Foxglove bridge:", error);
-                ros.close();
-            });
-
-            ros.on("close", () => {
-                onConnectionStatusChange(false);
-                console.log("Connection to Foxglove bridge closed");
-                onClearHistory();
-                clearTimeout(staleTimeoutId.current);
-                clearTimeout(retryTimeoutId.current);
-                if (retryConnection) {
-                    console.log("Retrying WebSocket connection...");
-                    retryTimeoutId.current = setTimeout(connectToWebSocket, retryDelay);
+                // Extract timestamp from ROS message header
+                let timestamp = Date.now(); // Default fallback
+                if (message.header && message.header.stamp) {
+                    // Convert ROS time (sec + nanosec) to JavaScript timestamp (milliseconds)
+                    const sec = message.header.stamp.sec || 0;
+                    const nanosec = message.header.stamp.nanosec || 0;
+                    timestamp = sec * 1000 + Math.round(nanosec / 1000000);
+                } else {
+                    console.log("No header.stamp found in message, using current time");
                 }
-            });
-        };
 
-        connectToWebSocket();
+                // Create DiagStatus object
+                const diagStatus: DiagnosticsStatus = {
+                    timestamp,
+                    level: overallLevel,
+                    diagnostics: diagnosticsTree
+                };
 
-        // Cleanup function
+                onDiagnosticsUpdate(diagStatus);
+            } else {
+                console.warn("Unexpected diagnostics data format:", message);
+            }
+
+            // Set a timeout to clear stale diagnostics if no new message is received
+            staleTimeoutId.current = setTimeout(() => {
+                console.warn("No diagnostics message received for 5 seconds. Clearing stale diagnostics.");
+                onClearHistory();
+            }, timeoutDuration);
+        });
+        console.log(`Subscribed to topic: ${diagnosticsTopic.name}`);
+
         return () => {
-            console.log(`Cleaning up connection for namespace ${namespace}`);
             diagnosticsTopic.unsubscribe();
-            retryConnection = false;
             clearTimeout(staleTimeoutId.current);
-            clearTimeout(retryTimeoutId.current);
-            ros.close();
         };
-    }, [namespace, url, onDiagnosticsUpdate, onConnectionStatusChange, onClearHistory]);
+    }, [ros, connected, session, namespace, onDiagnosticsUpdate, onClearHistory]);
 
     return null; // This component does not render anything
 };

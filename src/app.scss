@@ -27,3 +27,122 @@
 .pf-v6-c-progress-stepper__step-main {
     margin-block-start: 0 !important;
 }
+/* ---------- ROS 2 Networking: topology (ported from rover_network_monitor) ---------- */
+
+.network-topology {
+    --network-ok: var(--pf-t--global--color--status--success--default);
+    --network-bad: var(--pf-t--global--color--status--danger--default);
+    --network-warn: var(--pf-t--global--color--status--warning--default);
+    --network-accent: var(--pf-t--global--color--brand--default);
+    --network-ink: var(--pf-t--global--text--color--regular);
+    --network-muted: var(--pf-t--global--text--color--subtle);
+    --network-paper: var(--pf-t--global--background--color--primary--default);
+
+    overflow-x: auto;
+
+    > svg {
+        display: block;
+        inline-size: 100%;
+        min-inline-size: 720px;
+        block-size: auto;
+    }
+
+    .cable { stroke: var(--network-ink); stroke-width: 2.4; fill: none; }
+    .cable-cross { stroke-dasharray: 10 6; }
+    .cable-wireless { stroke-dasharray: 1 6; stroke-linecap: round; stroke-width: 3; }
+    .link:hover .cable { stroke: var(--network-accent); stroke-width: 3.4; }
+    .link-hit { stroke: transparent; stroke-width: 16; fill: none; cursor: help; }
+
+    .wifi-plate { fill: var(--network-paper); stroke: var(--network-ink); stroke-width: 1.4; }
+    .wifi-arc { fill: none; stroke: var(--network-ink); stroke-width: 1.8; stroke-linecap: round; }
+    .wifi-dot { fill: var(--network-ink); }
+
+    .light-online { fill: var(--network-ok); }
+    .light-offline { fill: var(--network-bad); }
+    .light-unknown { fill: var(--network-paper); stroke: var(--network-muted); stroke-width: 1; }
+
+    .node.monitored { cursor: pointer; }
+    .node:focus-visible { outline: none; }
+    .node-halo { fill: none; stroke-width: 3; stroke: transparent; }
+    .node.status-partial .node-halo { stroke: var(--network-warn); }
+    .node.status-offline .node-halo { stroke: var(--network-bad); }
+
+    .node.monitored:hover .node-halo,
+    .node:focus-visible .node-halo { stroke: var(--network-accent); }
+    .node.selected .node-halo { stroke: var(--network-accent); stroke-width: 4; }
+    .node-model { font-size: 12px; fill: var(--network-muted); }
+    .node-name { font-size: 13px; font-weight: 600; fill: var(--network-ink); }
+    .label-plate { fill: var(--network-paper); opacity: 0.92; }
+    .node-label { text-anchor: middle; }
+
+    /* Device glyphs keep their fixed "metal" look in both themes. */
+    .ico-body { fill: url("#metal"); stroke: #2b2b2b; stroke-width: 1.4; }
+    .ico-top { fill: #8c8c8c; stroke: #2b2b2b; stroke-width: 1.4; }
+    .ico-mark { stroke: #fff; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .ico-dark { fill: #2b2b2b; }
+    .ico-screen { fill: #3b3b3b; stroke: #2b2b2b; stroke-width: 1.2; }
+    .ico-glass { fill: #f7a600; opacity: 0.85; }
+    .ico-line { stroke: #2b2b2b; stroke-width: 2; stroke-linecap: round; }
+}
+
+.network-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--lg);
+    margin-block-start: var(--pf-t--global--spacer--sm);
+    padding: 0;
+    list-style: none;
+    color: var(--network-muted);
+    font-size: var(--pf-t--global--font--size--sm);
+
+    li { display: flex; align-items: center; gap: var(--pf-t--global--spacer--xs); }
+    svg { inline-size: 28px; block-size: 12px; }
+    li svg[viewBox="0 0 14 12"] { inline-size: 14px; }
+    .cable { stroke-width: 2; }
+}
+
+.network-device { border-inline-start: 4px solid var(--pf-t--global--border--color--default); }
+.network-device-online { border-inline-start-color: var(--pf-t--global--color--status--success--default); }
+.network-device-partial { border-inline-start-color: var(--pf-t--global--color--status--warning--default); }
+.network-device-offline { border-inline-start-color: var(--pf-t--global--color--status--danger--default); }
+.network-device-selected { outline: 2px solid var(--pf-t--global--color--brand--default); }
+
+.network-history { margin-block-end: var(--pf-t--global--spacer--md); }
+
+.network-spark {
+    display: block;
+    inline-size: 100%;
+    block-size: 44px;
+    margin-block: var(--pf-t--global--spacer--xs);
+    background: var(--pf-t--global--background--color--secondary--default);
+    border-radius: var(--pf-t--global--border--radius--small);
+}
+
+.network-spark-line { fill: none; stroke: var(--pf-t--global--color--brand--default); stroke-width: 1.6; }
+.network-spark-fail { fill: var(--pf-t--global--color--status--danger--default); }
+.network-error { color: var(--pf-t--global--text--color--status--danger--default); }
+
+/* ---------- ROS 2 LEDs ---------- */
+
+.led-now { block-size: 100%; }
+.led-strip + .led-strip { margin-block-start: var(--pf-t--global--spacer--md); }
+
+.led-strip-leds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: var(--pf-t--global--spacer--sm);
+    margin-block-start: var(--pf-t--global--spacer--xs);
+    background: #111;
+    border-radius: var(--pf-t--global--border--radius--small);
+}
+
+.led-strip-led {
+    inline-size: 14px;
+    block-size: 14px;
+    border-radius: 50%;
+    background: var(--led-color, #000);
+    box-shadow: 0 0 6px var(--led-color, transparent);
+}
+
+.led-row-muted { opacity: 0.6; }

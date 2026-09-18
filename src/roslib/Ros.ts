@@ -96,6 +96,28 @@ export class Ros {
         }
     }
 
+    /** True once the bridge has advertised the service. */
+    hasService(service: string) {
+        return this.rosImpl?.hasService(service) ?? false;
+    }
+
+    /**
+     * Call a service through the bridge. Rejects when not connected, or when the
+     * service is not advertised / does not answer within timeoutMs.
+     */
+    callService<Request, Response>(service: string, request: Request, timeoutMs = 5000) {
+        const impl = this.rosImpl;
+        if (!impl) {
+            return Promise.reject(new Error('Not connected to the bridge'));
+        }
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const timeout = new Promise<never>((_resolve, reject) => {
+            timer = setTimeout(() => reject(new Error(`${service} did not answer within ${timeoutMs} ms`)), timeoutMs);
+        });
+        return Promise.race([impl.sendServiceRequest<Request, Response>(service, request), timeout])
+                .finally(() => clearTimeout(timer));
+    }
+
     getServiceType(
         service: string,
         callback: (type: string) => void,

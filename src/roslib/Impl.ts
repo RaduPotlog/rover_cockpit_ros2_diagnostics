@@ -54,6 +54,20 @@ export interface Subscription {
   unsubscribe: () => void;
 }
 
+// Newer bridges (foxglove SDK) describe a service with request/response definitions;
+// older ones only send the deprecated requestSchema/responseSchema strings.
+const serviceSchema = (service: Service, part: 'request' | 'response') => {
+    const definition = service[part];
+    if (definition) {
+        return { schema: definition.schema, schemaEncoding: definition.schemaEncoding };
+    }
+    const schema = part === 'request' ? service.requestSchema : service.responseSchema;
+    if (schema === undefined) {
+        throw new Error(`Service ${service.name} has no ${part} schema`);
+    }
+    return { schema, schemaEncoding: undefined };
+};
+
 export class Impl {
     readonly emitter = new EventEmitter<EventTypes>();
 
@@ -167,6 +181,10 @@ export class Impl {
 
     getTopicType(topic: string) {
         return this.#channelsByName.get(topic)?.schemaName;
+    }
+
+    hasService(service: string) {
+        return this.#servicesByName.has(service);
     }
 
     getServiceType(service: string) {
@@ -351,15 +369,10 @@ export class Impl {
         const name =
       'schemaName' in channelOrService
           ? channelOrService.schemaName
-          : channelOrService.type;
-        const schemaEncoding =
-      'schemaEncoding' in channelOrService
-          ? channelOrService.schemaEncoding
-          : undefined;
-        const schema =
-      'schema' in channelOrService
-          ? channelOrService.schema
-          : channelOrService.responseSchema;
+          : `${channelOrService.type}_Response`;
+        const { schema, schemaEncoding } = 'schemaName' in channelOrService
+            ? channelOrService
+            : serviceSchema(channelOrService, 'response');
         return (
             this.#messageReaders.get(name) ??
       (() => {
@@ -379,15 +392,10 @@ export class Impl {
         const name =
       'schemaName' in channelOrService
           ? channelOrService.schemaName
-          : channelOrService.type;
-        const schemaEncoding =
-      'schemaEncoding' in channelOrService
-          ? channelOrService.schemaEncoding
-          : undefined;
-        const schema =
-      'schema' in channelOrService
-          ? channelOrService.schema
-          : channelOrService.requestSchema;
+          : `${channelOrService.type}_Request`;
+        const { schema, schemaEncoding } = 'schemaName' in channelOrService
+            ? channelOrService
+            : serviceSchema(channelOrService, 'request');
         return (
             this.#messageWriters.get(name) ??
       (() => {

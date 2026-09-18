@@ -1,0 +1,24 @@
+{
+  "source": "https://husarion.com/manuals/panther/software/ros2/robot-management/#led-animations",
+  "layers": ["ERROR", "ALERT", "INFO", "STATE"],
+  "animations": [
+    { "id": 0, "name": "E_STOP", "priority": 3, "description": "E-stop is engaged" },
+    { "id": 1, "name": "READY", "priority": 3, "description": "E-stop released, robot ready" },
+    { "id": 2, "name": "ERROR", "priority": 0, "description": "System error, e.g. battery overheating" },
+    { "id": 3, "name": "NO_ERROR", "priority": 0, "description": "Clears the ERROR layer" },
+    { "id": 4, "name": "MANUAL_ACTION", "priority": 3, "description": "Robot is being driven manually" },
+    { "id": 5, "name": "LOW_BATTERY", "priority": 2, "description": "Battery below the low threshold" },
+    { "id": 6, "name": "CRITICAL_BATTERY", "priority": 2, "description": "Battery below the critical threshold" },
+    { "id": 7, "name": "CHARGING_BATTERY", "priority": 2, "description": "Charging, shows the charge level" },
+    { "id": 8, "name": "BATTERY_CHARGED", "priority": 2, "description": "Battery fully charged" },
+    { "id": 9, "name": "CHARGER_INSERTED", "priority": 1, "description": "Charger just connected" },
+    { "id": 10, "name": "BATTERY_NOMINAL", "priority": 2, "description": "Clears the battery (INFO) layer" },
+    { "id": 11, "name": "AUTONOMOUS_READY", "priority": 3, "description": "Autonomous mode, waiting for a goal" },
+    { "id": 12, "name": "AUTONOMOUS_ACTION", "priority": 3, "description": "Autonomous mode, driving to a goal" },
+    { "id": 13, "name": "GOAL_ACHIEVED", "priority": 1, "description": "Navigation goal reached" },
+    { "id": 14, "name": "BLINKER_LEFT", "priority": 1, "description": "Left turn indicator" },
+    { "id": 15, "name": "BLINKER_RIGHT", "priority": 1, "description": "Right turn indicator" },
+    { "id": 16, "name": "GOAL_FAILED", "priority": 1, "description": "Navigation goal failed" },
+    { "id": 17, "name": "FLOOD_LIGHT", "priority": 3, "description": "White flood light" }
+  ]
+}

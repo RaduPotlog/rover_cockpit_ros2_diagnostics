@@ -17,33 +17,49 @@
  * along with Cockpit; If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
     Alert,
-    Button,
-    Flex,
-    FlexItem,
     Page,
     PageSection,
     Stack,
-    Title
+    Tab,
+    Tabs,
+    TabTitleText
 } from "@patternfly/react-core";
-import { PauseIcon, PlayIcon } from "@patternfly/react-icons";
 
 import cockpit from 'cockpit';
-import { DiagnosticsStatus } from "./interfaces";
-import { DiagnosticsTable } from "./components/DiagnosticsTable";
-import { DiagnosticsTreeTable } from "./components/DiagnosticsTreeTable";
-import { RosConnectionManager } from "./components/RosConnectionManager";
+import { RosProvider } from "./components/RosProvider";
 import { useNamespace } from "./hooks/useNamespace";
 import { useWebSocketUrl } from "./hooks/useWebSocketUrl";
-import { DiagnosticsCapture } from "./components/DiagnosticsCapture";
 import { ManualNamespace } from "./components/ManualNamespace";
-import { HistorySelection } from "./components/HistorySelection";
-import { useDiagHistory } from './hooks/useDiagHistory';
+import { DiagnosticsTab } from "./diagnostics/DiagnosticsTab";
+import { NetworkingTab } from "./networking/NetworkingTab";
+import { LedsTab } from "./leds/LedsTab";
 
 const _ = cockpit.gettext;
+
+// Tab keys double as the URL path (#/networking, #/leds); diagnostics is the root.
+const TABS = ["diagnostics", "networking", "leds"] as const;
+type TabKey = typeof TABS[number];
+
+const tabFromLocation = (): TabKey => {
+    const path = cockpit.location.path[0];
+    return (TABS as readonly string[]).includes(path) ? path as TabKey : "diagnostics";
+};
+
+const useActiveTab = (): [TabKey, (tab: TabKey) => void] => {
+    const [tab, setTab] = useState<TabKey>(tabFromLocation);
+
+    useEffect(() => {
+        const update = () => setTab(tabFromLocation());
+        cockpit.addEventListener("locationchanged", update);
+        return () => cockpit.removeEventListener("locationchanged", update);
+    }, []);
+
+    return [tab, (next: TabKey) => cockpit.location.go(next === "diagnostics" ? [] : [next])];
+};
 
 export const Application = () => {
     const {
@@ -53,88 +69,45 @@ export const Application = () => {
         manualEntryRequired
     } = useNamespace();
     const url = useWebSocketUrl(); // Use custom hook for WebSocket URL
-    const [diagStatusDisplay, setDiagStatusDisplay] = useState<DiagnosticsStatus | null>(null); // DiagStatus data for display
-    const [bridgeConnected, setBridgeConnected] = useState(false);
-    const [selectedRawName, setSelectedRawName] = useState<string | null>(null); // Used as identifier for diag entry so that values get updated
-    const [isPaused, setIsPaused] = useState(false); // Pause state for diagnostics updates
-
-    const {
-        diagHistory,
-        updateDiagHistory,
-        clearDiagHistory
-    } = useDiagHistory(isPaused);
-
-    // Extract diagnostics array from DiagnosticsStatus for components that need it
-    const diagnostics = diagStatusDisplay?.diagnostics || [];
+    const [activeTab, setActiveTab] = useActiveTab();
+    const namespaceValid = !invalidNamespaceMessage;
 
     return (
-        <Page id="ros2-diag" className='no-masthead-sidebar'>
-            <PageSection>
-                <Stack hasGutter>
-                    <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
-                        <FlexItem>
-                            <Title headingLevel="h1" size="2xl">
-                                {_("ROS 2 Diagnostics")}
-                            </Title>
-                        </FlexItem>
-                        <FlexItem>
-                            <Button
-                                variant="secondary"
-                                icon={isPaused ? <PlayIcon /> : <PauseIcon />}
-                                onClick={() => {
-                                    if (isPaused) clearDiagHistory();
-                                    setIsPaused(!isPaused);
-                                }}
-                                aria-label={isPaused ? _("Resume diagnostics updates") : _("Pause diagnostics updates")}
-                            >
-                                {isPaused ? _("Resume") : _("Pause")}
-                            </Button>
-                        </FlexItem>
-                    </Flex>
-                    <HistorySelection
-                        diagHistory={diagHistory}
-                        setDiagStatusDisplay={setDiagStatusDisplay}
-                        isPaused={isPaused}
-                        setIsPaused={setIsPaused}
-                    />
-                    {invalidNamespaceMessage && (
-                        <Alert
-                            variant="danger"
-                            title={invalidNamespaceMessage} // Display error message if namespace is invalid
-                        />
-                    )}
-                    { manualEntryRequired && (
-                        <ManualNamespace
-                            setManualNamespace={setManualNamespace}
-                            namespace={namespace}
-                        />
-                    )}
-                    <DiagnosticsCapture namespace={namespace} />
-                    { !invalidNamespaceMessage && (
-                        <>
-                            <RosConnectionManager
+        <RosProvider url={url}>
+            <Page id="ros2-diag" className='no-masthead-sidebar'>
+                <PageSection>
+                    <Stack hasGutter>
+                        <Tabs
+                            activeKey={activeTab}
+                            onSelect={(_event, key) => setActiveTab(key as TabKey)}
+                            aria-label={_("Rover pages")}
+                        >
+                            <Tab eventKey="diagnostics" title={<TabTitleText>{_("ROS 2 Diagnostics")}</TabTitleText>} />
+                            <Tab eventKey="networking" title={<TabTitleText>{_("ROS 2 Networking")}</TabTitleText>} />
+                            <Tab eventKey="leds" title={<TabTitleText>{_("ROS 2 LEDs")}</TabTitleText>} />
+                        </Tabs>
+                        {invalidNamespaceMessage && activeTab !== "networking" && (
+                            <Alert
+                                variant="danger"
+                                title={invalidNamespaceMessage} // Display error message if namespace is invalid
+                            />
+                        )}
+                        { manualEntryRequired && activeTab !== "networking" && (
+                            <ManualNamespace
+                                setManualNamespace={setManualNamespace}
                                 namespace={namespace}
-                                url={url}
-                                onDiagnosticsUpdate={updateDiagHistory}
-                                onConnectionStatusChange={setBridgeConnected}
-                                onClearHistory={clearDiagHistory}
                             />
-                            {diagnostics.length > 0 && (
-                                <>
-                                    <DiagnosticsTable diagnostics={diagnostics} setSelectedRawName={setSelectedRawName} variant="error" />
-                                    <DiagnosticsTable diagnostics={diagnostics} setSelectedRawName={setSelectedRawName} variant="warning" />
-                                </>
-                            )}
-                            <DiagnosticsTreeTable
-                                diagnostics={diagnostics}
-                                bridgeConnected={bridgeConnected}
-                                selectedRawName={selectedRawName}
-                                setSelectedRawName={setSelectedRawName}
-                            />
-                        </>
-                    )}
-                </Stack>
-            </PageSection>
-        </Page>
+                        )}
+                        {/* Diagnostics stays mounted so its history survives tab switches;
+                            the other tabs only ping / subscribe while they are shown. */}
+                        <div hidden={activeTab !== "diagnostics"}>
+                            <DiagnosticsTab namespace={namespace} namespaceValid={namespaceValid} />
+                        </div>
+                        {activeTab === "networking" && <NetworkingTab />}
+                        {activeTab === "leds" && <LedsTab namespace={namespace} namespaceValid={namespaceValid} />}
+                    </Stack>
+                </PageSection>
+            </Page>
+        </RosProvider>
     );
 };

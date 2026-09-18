@@ -37,6 +37,9 @@ export class Topic<TMessage = Message> {
 
     #publisher?: Promise<Publisher<TMessage>>;
     #subscriptions = new Map<(message: TMessage) => void, Subscription>();
+    // Callbacks whose subscription is still being set up (the bridge has not advertised
+    // the topic yet); unsubscribing before that must still drop the subscription.
+    #pending = new Set<(message: TMessage) => void>();
 
     constructor(
     readonly options: {
@@ -68,18 +71,25 @@ export class Topic<TMessage = Message> {
     }
 
     subscribe(callback: (message: TMessage) => void) {
+        this.#pending.add(callback);
         this.#ros.rosImpl
                 ?.createSubscription(this.name, callback)
                 .then((subscription) => {
-                    this.#subscriptions.set(callback, subscription);
+                    if (this.#pending.delete(callback)) {
+                        this.#subscriptions.set(callback, subscription);
+                    } else {
+                        subscription.unsubscribe();
+                    }
                 });
     }
 
     unsubscribe(callback?: (message: TMessage) => void) {
         if (callback) {
+            this.#pending.delete(callback);
             this.#subscriptions.get(callback)?.unsubscribe();
             this.#subscriptions.delete(callback);
         } else {
+            this.#pending.clear();
             for (const subscription of this.#subscriptions.values()) {
                 subscription.unsubscribe();
             }

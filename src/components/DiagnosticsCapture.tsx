@@ -17,11 +17,12 @@
  * along with Cockpit; If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button, Alert, Card, CardBody, Flex, FlexItem, Title } from "@patternfly/react-core";
 
 import cockpit from 'cockpit';
 import { downloadFile } from './Download';
+import { useAdminPermission } from '../hooks/useAdminPermission';
 
 const _ = cockpit.gettext;
 
@@ -29,18 +30,7 @@ export const DiagnosticsCapture = ({ namespace }: { namespace: string }) => {
     const [isCapturing, setIsCapturing] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [downloadPath, setDownloadPath] = useState<string | null>(null);
-    const [adminAccess, setAdminAccess] = useState<boolean>(false);
-
-    useEffect(() => {
-        const permission = cockpit.permission({ admin: true });
-        const update = () => setAdminAccess(permission.allowed);
-        permission.addEventListener("changed", update);
-        update();
-        return () => {
-            permission.removeEventListener("changed", update);
-            permission.close();
-        };
-    }, []);
+    const adminAccess = useAdminPermission();
 
     const runBash = async (command: string, options: { superuser?: string } = {}) => {
         return await cockpit.spawn(["bash", "-c", command], options);
