@@ -42,9 +42,9 @@ import {
 
 import cockpit from 'cockpit';
 import { useRos } from '../components/RosProvider';
-import { AnimationTable, LayerTable, LedStrips, NowPlaying } from './LedViews';
+import { AnimationTable, LayerTable, LedStrips, NowPlaying, type AnimationControls, type AnimationRef } from './LedViews';
 import { useLedState } from './useLedState';
-import type { AnimationRow, LedReference } from './model';
+import type { LedReference } from './model';
 import referenceJson from './led_reference.json';
 
 const _ = cockpit.gettext;
@@ -74,16 +74,19 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
 
     const [repeating, setRepeating] = useState(true);
     const [param, setParam] = useState("");
-    const [brightness, setBrightness] = useState(1);
-    const [lastBrightness, setLastBrightness] = useState<number | null>(null);
+    // null: follow what rover_led_driver reports, until the slider is moved.
+    const [brightness, setBrightness] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     const [feedback, setFeedback] = useState<Feedback | null>(null);
 
     const animationService = `${namespace}/led/set_animation`;
+    const stopService = `${namespace}/led/stop_animation`;
     const brightnessService = `${namespace}/led/set_brightness`;
     // Re-evaluated on every snapshot refresh, so late advertisements show up.
     const animationBlocked = controlsBlockedReason(connected, !!ros?.hasService(animationService));
+    const stopBlocked = controlsBlockedReason(connected, !!ros?.hasService(stopService));
     const brightnessBlocked = controlsBlockedReason(connected, !!ros?.hasService(brightnessService));
+    const shownBrightness = brightness ?? snapshot.brightness ?? 1;
 
     const call = async <Request, >(service: string, request: Request, what: string) => {
         if (!ros) return false;
@@ -102,17 +105,26 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
         }
     };
 
-    const play = (row: AnimationRow) => call(
-        animationService,
-        { animation: { id: row.id, param }, repeating },
-        cockpit.format(_("Play $0"), row.name),
-    );
-
-    const applyBrightness = async () => {
-        if (await call(brightnessService, { data: brightness }, cockpit.format(_("Set brightness to $0%"), Math.round(brightness * 100)))) {
-            setLastBrightness(brightness);
-        }
+    const controls: AnimationControls = {
+        playBlocked: animationBlocked ?? (busy ? _("Waiting for the previous request") : null),
+        stopBlocked: stopBlocked ?? (busy ? _("Waiting for the previous request") : null),
+        onPlay: (animation: AnimationRef) => call(
+            animationService,
+            { animation: { id: animation.id, param }, repeating },
+            cockpit.format(_("Play $0"), animation.name),
+        ),
+        onStop: (animation: AnimationRef) => call(
+            stopService,
+            { id: animation.id },
+            cockpit.format(_("Stop $0"), animation.name),
+        ),
     };
+
+    const applyBrightness = () => call(
+        brightnessService,
+        { data: shownBrightness },
+        cockpit.format(_("Set brightness to $0%"), Math.round(shownBrightness * 100)),
+    );
 
     let problem: string | null = null;
     if (!namespaceValid) problem = _("Set a valid ROS namespace to follow rover_led.");
@@ -157,7 +169,7 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
                         <CardHeader>
                             <CardTitle>{_("Controls")}</CardTitle>
                             <Content component="small">
-                                {animationBlocked ?? _("Play an animation from the table below, or change the brightness.")}
+                                {animationBlocked ?? _("Play or stop animations in the tables below, or change the brightness.")}
                             </Content>
                         </CardHeader>
                         <CardBody>
@@ -179,14 +191,14 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
                                     />
                                 </FormGroup>
                                 <FormGroup
-                                    label={lastBrightness == null
+                                    label={snapshot.brightness == null
                                         ? _("Brightness")
-                                        : cockpit.format(_("Brightness (last set $0%)"), Math.round(lastBrightness * 100))}
+                                        : cockpit.format(_("Brightness (current $0%)"), Math.round(snapshot.brightness * 100))}
                                     fieldId="led-brightness"
                                 >
                                     <Slider
                                         id="led-brightness"
-                                        value={Math.round(brightness * 100)}
+                                        value={Math.round(shownBrightness * 100)}
                                         min={0}
                                         max={100}
                                         step={5}
@@ -196,7 +208,7 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
                                         isDisabled={!!brightnessBlocked}
                                         inputLabel="%"
                                         isInputVisible
-                                        inputValue={Math.round(brightness * 100)}
+                                        inputValue={Math.round(shownBrightness * 100)}
                                         aria-label={_("Brightness")}
                                     />
                                 </FormGroup>
@@ -217,13 +229,8 @@ export const LedsTab = ({ namespace, namespaceValid }: { namespace: string; name
                 </GridItem>
             </Grid>
             <LedStrips snapshot={snapshot} />
-            <LayerTable snapshot={snapshot} />
-            <AnimationTable
-                snapshot={snapshot}
-                canPlay={!animationBlocked && !busy}
-                playDisabledReason={animationBlocked}
-                onPlay={play}
-            />
+            <LayerTable snapshot={snapshot} controls={controls} />
+            <AnimationTable snapshot={snapshot} controls={controls} />
         </Stack>
     );
 };

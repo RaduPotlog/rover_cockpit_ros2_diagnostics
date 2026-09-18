@@ -68,13 +68,15 @@ Device URL, and port 8765 only has to be reachable on the robot itself.
   topology to open its history. (Ported from `rover_network_monitor`.)
 - **ROS 2 LEDs**: live `rover_led` state:
   - the animation on top
-  - per-LED colours of both strips
+  - per-LED colours of both strips, scaled by the global brightness `rover_led_driver`
+    reports on `<namespace>/led/brightness`
   - the priority layers
   - the animation table, which merges `<namespace>/led/animations` with `src/leds/led_reference.json`
 
   The controls call `<namespace>/led/set_animation` (Play, with a repeating switch and an
-  optional param) and `<namespace>/led/set_brightness` through the bridge's `services`
-  capability. They are enabled whenever the bridge is connected and advertises the service.
+  optional param), `<namespace>/led/stop_animation` (Stop, on playing animations) and
+  `<namespace>/led/set_brightness` through the bridge's `services` capability. Each is
+  enabled whenever the bridge is connected and advertises its service.
 
 # Development and Source Instructions
 

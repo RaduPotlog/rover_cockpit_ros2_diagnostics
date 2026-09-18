@@ -98,6 +98,7 @@ const context = await esbuild.context({
                 build.onEnd(() => {
                     fs.copyFileSync('./src/manifest.json', './dist/manifest.json');
                     fs.copyFileSync('./src/index.html', './dist/index.html');
+                    fs.copyFileSync('./src/logo.png', './dist/logo.png');
                 });
             }
         },

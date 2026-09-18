@@ -23,13 +23,14 @@ import {
     CardHeader,
     CardTitle,
     Content,
+    Flex,
     Label,
     Progress,
     ProgressMeasureLocation,
     ProgressSize,
     Title,
 } from "@patternfly/react-core";
-import { PlayIcon } from "@patternfly/react-icons";
+import { PlayIcon, StopIcon } from "@patternfly/react-icons";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 
 import cockpit from 'cockpit';
@@ -82,11 +83,41 @@ export const NowPlaying = ({ snapshot }: { snapshot: LedSnapshot }) => {
     );
 };
 
+/** What the Play / Stop buttons act on. */
+export interface AnimationRef { id: number; name: string }
+
+/** Why Play / Stop are disabled (null when usable), and what they do. */
+export interface AnimationControls {
+    playBlocked: string | null;
+    stopBlocked: string | null;
+    onPlay: (animation: AnimationRef) => void;
+    onStop: (animation: AnimationRef) => void;
+}
+
+const StopButton = ({ animation, controls }: { animation: AnimationRef; controls: AnimationControls }) => (
+    <Button
+        variant="secondary"
+        isDanger
+        size="sm"
+        icon={<StopIcon />}
+        isAriaDisabled={!!controls.stopBlocked}
+        title={controls.stopBlocked ?? undefined}
+        onClick={() => controls.onStop(animation)}
+    >
+        {_("Stop")}
+    </Button>
+);
+
 export const LedStrips = ({ snapshot }: { snapshot: LedSnapshot }) => (
     <Card>
         <CardHeader>
             <CardTitle>{_("LED strips")}</CardTitle>
-            <Content component="small">{_("Colour × brightness sent to each LED")}</Content>
+            <Content component="small">
+                {snapshot.brightness == null
+                    ? _("Colour × brightness sent to each LED")
+                    : cockpit.format(_("Colour × brightness sent to each LED, at $0% global brightness"),
+                                     Math.round(snapshot.brightness * 100))}
+            </Content>
         </CardHeader>
         <CardBody>
             {snapshot.panels.map(panel => {
@@ -102,7 +133,7 @@ export const LedStrips = ({ snapshot }: { snapshot: LedSnapshot }) => (
                                     <span
                                         key={i}
                                         className="led-strip-led"
-                                        style={{ "--led-color": ledColor(led) } as React.CSSProperties}
+                                        style={{ "--led-color": ledColor(led, snapshot.brightness ?? 1) } as React.CSSProperties}
                                         title={`LED ${i}: rgba(${led.join(", ")})`}
                                     />
                                 ))
@@ -115,7 +146,7 @@ export const LedStrips = ({ snapshot }: { snapshot: LedSnapshot }) => (
     </Card>
 );
 
-export const LayerTable = ({ snapshot }: { snapshot: LedSnapshot }) => (
+export const LayerTable = ({ snapshot, controls }: { snapshot: LedSnapshot; controls: AnimationControls }) => (
     <Card>
         <CardHeader>
             <CardTitle>{_("Priority layers")}</CardTitle>
@@ -131,6 +162,7 @@ export const LayerTable = ({ snapshot }: { snapshot: LedSnapshot }) => (
                         <Th>{_("Mode")}</Th>
                         <Th width={20}>{_("Progress")}</Th>
                         <Th>{_("Segments")}</Th>
+                        <Th screenReaderText={_("Actions")} />
                     </Tr>
                 </Thead>
                 <Tbody>
@@ -138,7 +170,7 @@ export const LayerTable = ({ snapshot }: { snapshot: LedSnapshot }) => (
                         ? [
                             <Tr key={layer.layer}>
                                 <Td dataLabel={_("Layer")}><LayerLabel layer={layer.layer} /></Td>
-                                <Td colSpan={5}>{snapshot.stale ? _("Unknown") : _("Idle")}</Td>
+                                <Td colSpan={6}>{snapshot.stale ? _("Unknown") : _("Idle")}</Td>
                             </Tr>
                         ]
                         : layer.animations.map(item => (
@@ -152,6 +184,7 @@ export const LayerTable = ({ snapshot }: { snapshot: LedSnapshot }) => (
                                 </Td>
                                 <Td dataLabel={_("Progress")}><ProgressBar progress={item.progress} label={cockpit.format(_("$0 progress"), item.name)} /></Td>
                                 <Td dataLabel={_("Segments")}>{item.segments.join(", ")}</Td>
+                                <Td isActionCell><StopButton animation={item} controls={controls} /></Td>
                             </Tr>
                         )))}
                 </Tbody>
@@ -167,14 +200,7 @@ const StateLabel = ({ row }: { row: AnimationRow }) => {
     return <Label isCompact variant="outline">{_("Idle")}</Label>;
 };
 
-interface AnimationTableProps {
-    snapshot: LedSnapshot;
-    canPlay: boolean;
-    playDisabledReason: string | null;
-    onPlay: (row: AnimationRow) => void;
-}
-
-export const AnimationTable = ({ snapshot, canPlay, playDisabledReason, onPlay }: AnimationTableProps) => {
+export const AnimationTable = ({ snapshot, controls }: { snapshot: LedSnapshot; controls: AnimationControls }) => {
     const rows = snapshot.animations;
     const loaded = rows.filter(row => row.configured).length;
     return (
@@ -211,16 +237,19 @@ export const AnimationTable = ({ snapshot, canPlay, playDisabledReason, onPlay }
                                     {row.active && row.segments.length > 0 && <Content component="small"> {row.segments.join(", ")}</Content>}
                                 </Td>
                                 <Td isActionCell>
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        icon={<PlayIcon />}
-                                        isAriaDisabled={!canPlay || row.configured === false}
-                                        title={playDisabledReason ?? (row.configured === false ? _("Not loaded on this robot") : undefined)}
-                                        onClick={() => onPlay(row)}
-                                    >
-                                        {_("Play")}
-                                    </Button>
+                                    <Flex spaceItems={{ default: 'spaceItemsSm' }} flexWrap={{ default: 'nowrap' }}>
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            icon={<PlayIcon />}
+                                            isAriaDisabled={!!controls.playBlocked || row.configured === false}
+                                            title={controls.playBlocked ?? (row.configured === false ? _("Not loaded on this robot") : undefined)}
+                                            onClick={() => controls.onPlay(row)}
+                                        >
+                                            {_("Play")}
+                                        </Button>
+                                        {row.active && <StopButton animation={row} controls={controls} />}
+                                    </Flex>
                                 </Td>
                             </Tr>
                         ))}

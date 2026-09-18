@@ -20,7 +20,8 @@
  *
  * rover_led_controller publishes the loaded animations once on <ns>/led/animations
  * (latched), what every priority layer plays on <ns>/led/state (5 Hz) and one RGBA
- * frame per panel on <ns>/led/channel_<n>_frame (50 Hz). The snapshot merges that
+ * frame per panel on <ns>/led/channel_<n>_frame (50 Hz). rover_led_driver reports the
+ * global brightness it applies on <ns>/led/brightness (latched). The snapshot merges that
  * with the Husarion reference table so animations the robot has not loaded still
  * show up, marked as not configured.
  *
@@ -77,6 +78,7 @@ export interface LedInputs {
     state: LedStateMsg | null;
     stateAt: number | null;
     frames: Map<number, { leds: Rgba[]; at: number } | null>;
+    brightness: number | null;
 }
 
 export interface LedSnapshot {
@@ -87,6 +89,7 @@ export interface LedSnapshot {
     segments: { name: string; channel: number }[];
     animations: AnimationRow[];
     panels: { channel: number; leds: Rgba[] | null }[];
+    brightness: number | null; // null until rover_led_driver reports it
 }
 
 const fresh = (at: number | null | undefined, now: number, staleMs: number) =>
@@ -124,9 +127,13 @@ export const decodeRgba = (msg: { data?: ArrayLike<number> }): Rgba[] => {
     return leds;
 };
 
-/** CSS colour an LED shows: the alpha channel is its brightness (see rover_led's SK9822 encoder). */
-export const ledColor = ([r, g, b, a]: Rgba) => {
-    const scale = a / 255;
+/**
+ * CSS colour an LED shows: the alpha channel is its brightness, scaled by the driver's
+ * global brightness (see rover_led's SK9822 encoder). The frames are the controller's,
+ * before the driver, so the global brightness is applied here.
+ */
+export const ledColor = ([r, g, b, a]: Rgba, brightness = 1) => {
+    const scale = (a / 255) * Math.min(Math.max(brightness, 0), 1);
     return `rgb(${Math.round(r * scale)} ${Math.round(g * scale)} ${Math.round(b * scale)})`;
 };
 
@@ -180,5 +187,6 @@ export const ledSnapshot = (
         panels: [...inputs.frames].map(([channel, frame]) => ({
             channel, leds: frame && fresh(frame.at, now, staleMs) ? frame.leds : null,
         })),
+        brightness: inputs.brightness,
     };
 };

@@ -21,12 +21,16 @@ import React, { useEffect, useState } from 'react';
 
 import {
     Alert,
+    Content,
+    Flex,
+    FlexItem,
     Page,
     PageSection,
     Stack,
     Tab,
     Tabs,
-    TabTitleText
+    TabTitleText,
+    Title,
 } from "@patternfly/react-core";
 
 import cockpit from 'cockpit';
@@ -75,6 +79,15 @@ export const Application = () => {
             <Page id="ros2-diag" className='no-masthead-sidebar'>
                 <PageSection>
                     <Stack hasGutter>
+                        <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsMd' }}>
+                            <FlexItem>
+                                <img className="rover-logo" src="logo.png" alt={_("Mechatronics Academy")} />
+                            </FlexItem>
+                            <FlexItem>
+                                <Title headingLevel="h1" size="2xl">{_("Rover A1")}</Title>
+                                <Content component="small">{_("Mechatronics Academy")}</Content>
+                            </FlexItem>
+                        </Flex>
                         <Tabs
                             activeKey={activeTab}
                             onSelect={(_event, key) => setActiveTab(key as TabKey)}

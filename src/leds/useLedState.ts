@@ -46,7 +46,13 @@ export const useLedState = (
 ): LedSnapshot => {
     const { ros, connected, session } = useRos();
     const [snapshot, setSnapshot] = useState<LedSnapshot>(() => ledSnapshot(
-        { catalog: null, state: null, stateAt: null, frames: new Map(channels.map(channel => [channel, null])) },
+        {
+            catalog: null,
+            state: null,
+            stateAt: null,
+            frames: new Map(channels.map(channel => [channel, null])),
+            brightness: null,
+        },
         reference, Date.now()));
 
     useEffect(() => {
@@ -55,6 +61,7 @@ export const useLedState = (
             state: null,
             stateAt: null,
             frames: new Map(channels.map(channel => [channel, null])),
+            brightness: null,
         };
         const rawFrames = new Map<number, { msg: ImageMsg; at: number }>();
         const topics: ROSLIB.Topic<never>[] = [];
@@ -80,6 +87,8 @@ export const useLedState = (
                 inputs.state = msg;
                 inputs.stateAt = Date.now();
             });
+            subscribe<{ data: number }>(`${namespace}/led/brightness`, "std_msgs/msg/Float32",
+                                        msg => { inputs.brightness = msg.data });
             for (const channel of channels) {
                 subscribe<ImageMsg>(`${namespace}/led/channel_${channel}_frame`, "sensor_msgs/msg/Image",
                                     msg => { rawFrames.set(channel, { msg, at: Date.now() }) });

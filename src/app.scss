@@ -27,6 +27,14 @@
 .pf-v6-c-progress-stepper__step-main {
     margin-block-start: 0 !important;
 }
+/* ---------- Page header ---------- */
+
+.rover-logo {
+    display: block;
+    inline-size: 48px;
+    block-size: 48px;
+}
+
 /* ---------- ROS 2 Networking: topology (ported from rover_network_monitor) ---------- */
 
 .network-topology {

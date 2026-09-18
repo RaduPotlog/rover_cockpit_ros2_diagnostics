@@ -33,6 +33,7 @@ const inputs = (overrides: Partial<LedInputs> = {}): LedInputs => ({
     state: null,
     stateAt: null,
     frames: new Map([[1, null], [2, null]]),
+    brightness: null,
     ...overrides,
 });
 
@@ -97,4 +98,15 @@ test('decodes rgba8 frames into one rgba tuple per LED', () => {
 test('scales the LED colour by its brightness', () => {
     assert.equal(ledColor([255, 128, 0, 255]), 'rgb(255 128 0)');
     assert.equal(ledColor([255, 128, 0, 0]), 'rgb(0 0 0)');
+});
+
+test('scales the LED colour by the global brightness', () => {
+    assert.equal(ledColor([255, 128, 0, 255], 0.5), 'rgb(128 64 0)');
+    assert.equal(ledColor([255, 128, 0, 255], 0), 'rgb(0 0 0)');
+    assert.equal(ledColor([255, 128, 0, 255], 2), 'rgb(255 128 0)');
+});
+
+test('passes the reported brightness through, null until known', () => {
+    assert.equal(ledSnapshot(inputs(), REFERENCE, NOW).brightness, null);
+    assert.equal(ledSnapshot(inputs({ brightness: 0.25 }), REFERENCE, NOW).brightness, 0.25);
 });

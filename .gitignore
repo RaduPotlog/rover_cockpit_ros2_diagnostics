@@ -36,3 +36,4 @@
 /test/common/
 /test/images/
 /test/static-code
+*:Zone.Identifier

@@ -3,12 +3,13 @@
   <id>org.cockpit_project.ros2_diagnostics</id>
   <metadata_license>CC0-1.0</metadata_license>
   <name>ROS 2 Diagnostics</name>
-  <summary>View ROS 2 diagnostics</summary>
+  <summary>View ROS 2 diagnostics, networking and LEDs</summary>
   <description>
     <p>
-      A tool for viewing ROS 2 diagnostics.
+      A tool for viewing ROS 2 diagnostics, the rover network and the bumper LED animations.
     </p>
   </description>
+  <icon type="local">/usr/share/cockpit/ros2-diagnostics/logo.png</icon>
   <extends>org.cockpit_project.cockpit</extends>
   <launchable type="cockpit-manifest">ros2-diagnostics</launchable>
   <url type="homepage">https://github.com/clearpathrobotics/cockpit-ros2-diagnostics</url>
