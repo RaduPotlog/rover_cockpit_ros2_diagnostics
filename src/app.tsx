@@ -40,11 +40,12 @@ import { ManualNamespace } from "./components/ManualNamespace";
 import { DiagnosticsTab } from "./diagnostics/DiagnosticsTab";
 import { NetworkingTab } from "./networking/NetworkingTab";
 import { LedsTab } from "./leds/LedsTab";
+import { RcTab } from "./rc/RcTab";
 
 const _ = cockpit.gettext;
 
-// Tab keys double as the URL path (#/networking, #/leds); diagnostics is the root.
-const TABS = ["diagnostics", "networking", "leds"] as const;
+// Tab keys double as the URL path (#/networking, #/leds, #/rc); diagnostics is the root.
+const TABS = ["diagnostics", "networking", "leds", "rc"] as const;
 type TabKey = typeof TABS[number];
 
 const tabFromLocation = (): TabKey => {
@@ -96,6 +97,7 @@ export const Application = () => {
                             <Tab eventKey="diagnostics" title={<TabTitleText>{_("ROS 2 Diagnostics")}</TabTitleText>} />
                             <Tab eventKey="networking" title={<TabTitleText>{_("ROS 2 Networking")}</TabTitleText>} />
                             <Tab eventKey="leds" title={<TabTitleText>{_("ROS 2 LEDs")}</TabTitleText>} />
+                            <Tab eventKey="rc" title={<TabTitleText>{_("ROS 2 RC")}</TabTitleText>} />
                         </Tabs>
                         {invalidNamespaceMessage && activeTab !== "networking" && (
                             <Alert
@@ -116,6 +118,7 @@ export const Application = () => {
                         </div>
                         {activeTab === "networking" && <NetworkingTab />}
                         {activeTab === "leds" && <LedsTab namespace={namespace} namespaceValid={namespaceValid} />}
+                        {activeTab === "rc" && <RcTab namespace={namespace} namespaceValid={namespaceValid} />}
                     </Stack>
                 </PageSection>
             </Page>

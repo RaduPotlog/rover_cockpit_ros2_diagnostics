@@ -49,8 +49,8 @@ The following instructions should be completed on the computer that is to be mon
 
 ## Rover A1 tabs
 
-The page has three tabs (the selected one is kept in the URL: `#/`, `#/networking`, `#/leds`).
-They share one foxglove_bridge connection.
+The page has four tabs (the selected one is kept in the URL: `#/`, `#/networking`, `#/leds`,
+`#/rc`). They share one foxglove_bridge connection.
 
 The browser never connects to foxglove_bridge directly. The Cockpit bridge opens a TCP
 `stream` channel to `127.0.0.1:8765` on the robot, and the page runs the WebSocket client
@@ -77,6 +77,24 @@ Device URL, and port 8765 only has to be reachable on the robot itself.
   optional param), `<namespace>/led/stop_animation` (Stop, on playing animations) and
   `<namespace>/led/set_brightness` through the bridge's `services` capability. Each is
   enabled whenever the bridge is connected and advertises its service.
+- **ROS 2 RC**: what the ExpressLRS transmitter is sending, as `rover_crsf_teleop` decodes it:
+  - all 16 channels from `<namespace>/rc/channels`, each drawn centre-out about its
+    **calibrated** centre rather than the nominal 992, because that is what the rover maps
+    sticks with; roles and descriptions come from `src/rc/rc_reference.json`
+  - the uplink/downlink half of `<namespace>/rc/link`, coloured by `rover_crsf_teleop`'s own
+    failsafe thresholds so the colour means the same thing as the rover's decision to stop
+  - the **stick calibration** wizard, driven by the phase the node reports on
+    `<namespace>/rc/calibration/state` (transient local, so a reload or a second tab shows the
+    true state rather than a stale local one)
+
+  Calibration measures each channel's centre and endpoints on the transmitter that is actually
+  plugged in. The measurement happens **in the node**, not in the browser: `rc/channels` is
+  best-effort depth 1 at 50 Hz, so a page tracking min/max over the topic would miss the peaks.
+  The page deactivates `rover_crsf_teleop_node` through `.../change_state` before starting and
+  reactivates it afterwards — the sweep drives the sticks to full throw — and passes an explicit
+  E-Stop confirmation, which the node checks itself rather than trusting the page. Applying
+  rebuilds the stick mapping in place; nothing restarts. See the `rover_crsf_teleop` README for
+  what the node does with it.
 
 # Development and Source Instructions
 

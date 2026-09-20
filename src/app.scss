@@ -169,3 +169,61 @@
 }
 
 .led-row-muted { opacity: 0.6; }
+
+/* ROS 2 RC: one row per channel, the bar drawn centre-out about the calibrated centre. */
+.rc-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.rc-table th,
+.rc-table td {
+  padding-block: var(--pf-t--global--spacer--xs);
+  padding-inline-end: var(--pf-t--global--spacer--md);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.rc-table thead th {
+  border-block-end: 1px solid var(--pf-t--global--border--color--default);
+  font-weight: var(--pf-t--global--font--weight--body--bold);
+}
+
+.rc-col-bar { inline-size: 40%; }
+
+.rc-col-raw {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  inline-size: 4rem;
+}
+
+.rc-row-muted { opacity: 0.55; }
+
+.rc-bar-track {
+  position: relative;
+  block-size: 0.85rem;
+  border-radius: var(--pf-t--global--border--radius--small);
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  overflow: hidden;
+}
+
+.rc-bar-fill {
+  position: absolute;
+  inset-block: 0;
+  background-color: var(--pf-t--global--color--brand--default);
+}
+
+/* A released stick sits exactly on zero - the thing worth seeing at a glance. */
+.rc-bar-fill-centred { background-color: var(--pf-t--global--color--status--success--default); }
+
+.rc-bar-centre {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 50%;
+  inline-size: 1px;
+  background-color: var(--pf-t--global--border--color--default);
+}
+
+.rc-range { font-variant-numeric: tabular-nums; }
+
+.rc-range-deadband { color: var(--pf-t--global--text--color--subtle); }

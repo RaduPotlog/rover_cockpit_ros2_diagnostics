@@ -1,0 +1,20 @@
+{
+    "channels": [
+        { "channel": 1, "role": "angular_z", "label": "Angular Z", "description": "Right stick, left/right. Turn rate; inverted, so stick right turns right." },
+        { "channel": 2, "role": null, "label": "Channel 2", "description": "Right stick, up/down. Not read by rover_crsf_teleop." },
+        { "channel": 3, "role": "linear_x", "label": "Linear X", "description": "Left stick, up/down. Forward and reverse speed." },
+        { "channel": 4, "role": "latch_reset", "label": "E-Stop latch reset", "description": "Switch. Low resets the hardware interface's E-Stop latch." },
+        { "channel": 5, "role": "e_stop", "label": "E-Stop", "description": "Switch. Low sets the software user E-Stop, high clears it." },
+        { "channel": 6, "role": null, "label": "Channel 6", "description": "Unassigned." },
+        { "channel": 7, "role": null, "label": "Channel 7", "description": "Unassigned." },
+        { "channel": 8, "role": null, "label": "Channel 8", "description": "Unassigned." },
+        { "channel": 9, "role": null, "label": "Channel 9", "description": "Unassigned." },
+        { "channel": 10, "role": null, "label": "Channel 10", "description": "Unassigned." },
+        { "channel": 11, "role": null, "label": "Channel 11", "description": "Unassigned." },
+        { "channel": 12, "role": null, "label": "Channel 12", "description": "Unassigned." },
+        { "channel": 13, "role": null, "label": "Channel 13", "description": "Unassigned." },
+        { "channel": 14, "role": null, "label": "Channel 14", "description": "Unassigned." },
+        { "channel": 15, "role": null, "label": "Channel 15", "description": "Unassigned." },
+        { "channel": 16, "role": null, "label": "Channel 16", "description": "Unassigned." }
+    ]
+}
