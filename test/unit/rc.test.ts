@@ -4,12 +4,16 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import {
+    ESTOP_ENGAGED,
+    ESTOP_RELEASED,
+    ESTOP_UNKNOWN,
     PHASE_CENTER,
     PHASE_IDLE,
     PHASE_REVIEW,
     PHASE_SWEEP,
     STALE_MS,
     calibrationAt,
+    canCalibrate,
     deflectionOf,
     isCalibrating,
     linkQualityVariant,
@@ -42,6 +46,7 @@ const calibrationMsg = (overrides: Partial<Record<keyof Calibration, Record<numb
 
 const calibrationState = (over: Partial<RcCalibrationStateMsg> = {}): RcCalibrationStateMsg => ({
     phase: PHASE_IDLE,
+    e_stop: ESTOP_UNKNOWN,
     samples: 0,
     progress: 0,
     teleop_inhibited: false,
@@ -198,4 +203,35 @@ test('colours link quality by the rover failsafe thresholds, not by taste', () =
 
 test('reports RSSI in dBm, which CRSF sends negated', () => {
     assert.equal(rssiDbm(65), -65);
+});
+
+test('reports the E-Stop the node verified, defaulting to unknown', () => {
+    const state = calibrationState({ e_stop: ESTOP_ENGAGED });
+    assert.equal(rcSnapshot(inputs({ calibration: state }), REFERENCE, NOW).eStop, ESTOP_ENGAGED);
+
+    assert.equal(
+        rcSnapshot(inputs({ calibration: calibrationState({ e_stop: ESTOP_RELEASED }) }), REFERENCE, NOW).eStop,
+        ESTOP_RELEASED);
+
+    // Nothing at all: before any calibration state arrives, the page must not imply the rover
+    // has vouched for anything.
+    assert.equal(rcSnapshot(inputs(), REFERENCE, NOW).eStop, ESTOP_UNKNOWN);
+});
+
+test('a missing or unrecognised e_stop field reads as unknown, never as engaged', () => {
+    // An older node that does not publish the field at all must not look like one that has
+    // verified the E-Stop — that would be a fail-open on the page's own gate.
+    const missing = calibrationState();
+    delete (missing as { e_stop?: number }).e_stop;
+    assert.equal(rcSnapshot(inputs({ calibration: missing }), REFERENCE, NOW).eStop, ESTOP_UNKNOWN);
+
+    const nonsense = calibrationState({ e_stop: 99 });
+    assert.equal(rcSnapshot(inputs({ calibration: nonsense }), REFERENCE, NOW).eStop, ESTOP_UNKNOWN);
+});
+
+test('only an engaged E-Stop permits calibration', () => {
+    assert.equal(canCalibrate(ESTOP_ENGAGED), true);
+    assert.equal(canCalibrate(ESTOP_RELEASED), false);
+    // "Cannot verify" is a refusal, not a maybe.
+    assert.equal(canCalibrate(ESTOP_UNKNOWN), false);
 });

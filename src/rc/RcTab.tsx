@@ -48,7 +48,18 @@ import cockpit from 'cockpit';
 import { useRos } from '../components/RosProvider';
 import { ChannelTable, LinkCard } from './RcViews';
 import { useRcState } from './useRcState';
-import { PHASE_CENTER, PHASE_IDLE, PHASE_REVIEW, PHASE_SWEEP, isCalibrating, type RcReference } from './model';
+import {
+    ESTOP_ENGAGED,
+    ESTOP_RELEASED,
+    PHASE_CENTER,
+    PHASE_IDLE,
+    PHASE_REVIEW,
+    PHASE_SWEEP,
+    canCalibrate,
+    isCalibrating,
+    type EStop,
+    type RcReference,
+} from './model';
 import referenceJson from './rc_reference.json';
 
 const _ = cockpit.gettext;
@@ -79,6 +90,26 @@ const controlsBlockedReason = (connected: boolean, available: boolean): string |
     if (!connected) return _("Not connected to foxglove_bridge");
     if (!available) return _("rover_crsf_teleop is not advertising its calibration services");
     return null;
+};
+
+/**
+ * The rover's own answer, not the operator's. Start is enabled only on ENGAGED, and the node
+ * enforces the same rule - this is the convenient path to it, not the only one.
+ */
+const EStopIndicator = ({ eStop }: { eStop: EStop }) => {
+    if (eStop === ESTOP_ENGAGED) {
+        return <Label color="green">{_("E-Stop engaged")}</Label>;
+    }
+
+    if (eStop === ESTOP_RELEASED) {
+        return <Label color="red">{_("E-Stop released")}</Label>;
+    }
+
+    return (
+        <Label color="grey" title={_("Nothing recent on hardware_interface/gpio_state")}>
+            {_("E-Stop not verified")}
+        </Label>
+    );
 };
 
 const STEPS = [
@@ -240,6 +271,13 @@ export const RcTab = ({ namespace, namespaceValid }: { namespace: string; namesp
                 </FlexItem>
             </Flex>
             {problem && <Alert variant="warning" isInline title={problem} />}
+            {snapshot.teleopInhibited && snapshot.eStop !== ESTOP_ENGAGED && (
+                <Alert
+                    variant="danger"
+                    isInline
+                    title={_("The E-Stop is no longer engaged — this calibration is about to be cancelled.")}
+                />
+            )}
             {snapshot.teleopInhibited && (
                 <Alert
                     variant="warning"
@@ -288,11 +326,29 @@ export const RcTab = ({ namespace, namespaceValid }: { namespace: string; namesp
                                 {phase === PHASE_IDLE && (
                                     <>
                                         <Content component="p">
-                                            {_("The sweep drives the sticks to full throw. Engage the E-Stop before starting; RC teleop is taken off the command path for the whole session and put back afterwards.")}
+                                            {_("The sweep drives the sticks to full throw, and RC teleop is not the only thing that can command this rover. Engage the E-Stop before starting; teleop is taken off the command path for the whole session and put back afterwards.")}
                                         </Content>
+                                        <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
+                                            <FlexItem><EStopIndicator eStop={snapshot.eStop} /></FlexItem>
+                                            <FlexItem>
+                                                <Content component="small">
+                                                    {_("Read from the rover, not from the box below.")}
+                                                </Content>
+                                            </FlexItem>
+                                        </Flex>
+                                        {snapshot.eStop !== ESTOP_ENGAGED && (
+                                            <Alert
+                                                variant="info"
+                                                isInline
+                                                isPlain
+                                                title={snapshot.eStop === ESTOP_RELEASED
+                                                    ? _("Engage the E-Stop to enable calibration.")
+                                                    : _("Cannot reach hardware_interface/gpio_state. Calibration needs rover_hardware_interface running — it is refused rather than assumed safe.")}
+                                            />
+                                        )}
                                         <Checkbox
                                             id="rc-estop-confirmed"
-                                            label={_("The E-Stop is engaged")}
+                                            label={_("I have checked the E-Stop myself")}
                                             isChecked={eStopConfirmed}
                                             onChange={(_event, checked) => setEStopConfirmed(checked)}
                                         />
@@ -301,7 +357,8 @@ export const RcTab = ({ namespace, namespaceValid }: { namespace: string; namesp
                                                 variant="primary"
                                                 onClick={onStart}
                                                 isLoading={busy}
-                                                isAriaDisabled={!!blocked || !!lifecycleBlocked || !eStopConfirmed || busy}
+                                                isAriaDisabled={!!blocked || !!lifecycleBlocked ||
+                                                    !eStopConfirmed || !canCalibrate(snapshot.eStop) || busy}
                                                 title={blocked ?? lifecycleBlocked ?? undefined}
                                             >
                                                 {_("Start calibration")}

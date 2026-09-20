@@ -90,11 +90,16 @@ Device URL, and port 8765 only has to be reachable on the robot itself.
   Calibration measures each channel's centre and endpoints on the transmitter that is actually
   plugged in. The measurement happens **in the node**, not in the browser: `rc/channels` is
   best-effort depth 1 at 50 Hz, so a page tracking min/max over the topic would miss the peaks.
-  The page deactivates `rover_crsf_teleop_node` through `.../change_state` before starting and
-  reactivates it afterwards — the sweep drives the sticks to full throw — and passes an explicit
-  E-Stop confirmation, which the node checks itself rather than trusting the page. Applying
-  rebuilds the stick mapping in place; nothing restarts. See the `rover_crsf_teleop` README for
-  what the node does with it.
+  The sweep drives the sticks to full throw, so the page deactivates `rover_crsf_teleop_node`
+  through `.../change_state` before starting and reactivates it afterwards. The **E-Stop
+  indicator is read from the rover**, not asserted by the page: the node verifies
+  `hardware_interface/gpio_state` itself and reports it on the calibration state topic, Start is
+  enabled only when it says engaged, and an unreachable hardware interface shows as *not
+  verified* and refuses rather than being assumed safe. The operator's tick is kept as a second,
+  independent condition, and the node enforces both — the page is the convenient path to the
+  gate, not the gate. Releasing the E-Stop mid-session cancels it. Applying rebuilds the stick
+  mapping in place; nothing restarts. See the `rover_crsf_teleop` README for what the node does
+  with it.
 
 # Development and Source Instructions
 

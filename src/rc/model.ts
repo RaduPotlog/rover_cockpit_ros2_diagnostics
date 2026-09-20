@@ -46,6 +46,19 @@ export const PHASE_REVIEW = 3;
 
 export type Phase = typeof PHASE_IDLE | typeof PHASE_CENTER | typeof PHASE_SWEEP | typeof PHASE_REVIEW;
 
+/**
+ * What the node verified about the rover's E-Stop, from hardware_interface/gpio_state. This is
+ * what actually gates a calibration; the operator's tick is a second, independent condition.
+ *
+ * UNKNOWN is not "probably fine" - nothing has been received, or the sample is too old to trust -
+ * and the node refuses a calibration in that state, so the page does too.
+ */
+export const ESTOP_UNKNOWN = 0;
+export const ESTOP_ENGAGED = 1;
+export const ESTOP_RELEASED = 2;
+
+export type EStop = typeof ESTOP_UNKNOWN | typeof ESTOP_ENGAGED | typeof ESTOP_RELEASED;
+
 // Field names follow the rover_msgs definitions, as decoded from CDR.
 export interface RcChannelsMsg { channels: number[] | Uint16Array }
 
@@ -71,6 +84,7 @@ export interface RcCalibrationMsg {
 
 export interface RcCalibrationStateMsg {
     phase: number;
+    e_stop?: number;
     samples: number;
     progress: number;
     teleop_inhibited: boolean;
@@ -126,6 +140,7 @@ export interface RcSnapshot {
     samples: number;
     progress: number;
     teleopInhibited: boolean;
+    eStop: EStop;
     problems: string[];
     message: string;
 }
@@ -177,6 +192,12 @@ export const deflectionOf = (raw: number, calibration: Calibration): number => {
     return offset > 0 ? Math.min(1, magnitude) : -Math.min(1, magnitude);
 };
 
+const asEStop = (value: number | undefined): EStop =>
+    (value === ESTOP_ENGAGED || value === ESTOP_RELEASED) ? value : ESTOP_UNKNOWN;
+
+/** Whether the rover itself says it is safe to sweep the sticks to full throw. */
+export const canCalibrate = (eStop: EStop) => eStop === ESTOP_ENGAGED;
+
 /** True while the calibration flow owns the sticks. */
 export const isCalibrating = (phase: Phase) => phase !== PHASE_IDLE;
 
@@ -215,6 +236,9 @@ export const rcSnapshot = (inputs: RcInputs, reference: RcReference, now: number
         samples: calibrationState?.samples ?? 0,
         progress: calibrationState?.progress ?? 0,
         teleopInhibited: calibrationState?.teleop_inhibited ?? false,
+        // A missing field reads as UNKNOWN, never as engaged: an older node that does not
+        // publish it must not look like one that has verified the E-Stop.
+        eStop: asEStop(calibrationState?.e_stop),
         problems: calibrationState?.problems ?? [],
         message: calibrationState?.message ?? "",
     };
