@@ -42,6 +42,7 @@ import { Table, Thead, Tr, Th, Tbody, Td, TreeRowWrapper, TdProps } from "@patte
 import cockpit from 'cockpit';
 
 import { DiagnosticsEntry } from "../interfaces";
+import { booleanMeaning } from "../diagnostics/valueLabels";
 
 const _ = cockpit.gettext;
 
@@ -226,12 +227,18 @@ export const DiagnosticsTreeTable = ({
                                     <p><strong>{_("Values")}:</strong></p>
                                     <Table aria-label={_("Diagnostic Values Table")} borders={false} variant="compact">
                                         <Tbody>
-                                            {Object.entries(selectedEntry.values).map(([key, value]) => (
-                                                <Tr key={key}>
-                                                    <Td noPadding style={{ padding: "2px 0px 2px 8px" }}>{key}</Td>
-                                                    <Td noPadding style={{ padding: "2px 0px 2px 8px" }}>{value}</Td>
-                                                </Tr>
-                                            ))}
+                                            {Object.entries(selectedEntry.values).map(([key, value]) => {
+                                                const meaning = booleanMeaning(key, String(value));
+                                                return (
+                                                    <Tr key={key}>
+                                                        <Td noPadding style={{ padding: "2px 0px 2px 8px" }}>{key}</Td>
+                                                        <Td noPadding style={{ padding: "2px 0px 2px 8px" }}>
+                                                            {value}
+                                                            {meaning && <strong>{" = " + meaning}</strong>}
+                                                        </Td>
+                                                    </Tr>
+                                                );
+                                            })}
                                         </Tbody>
                                     </Table>
                                 </>
