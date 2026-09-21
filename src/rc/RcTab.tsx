@@ -106,7 +106,7 @@ const EStopIndicator = ({ eStop }: { eStop: EStop }) => {
     }
 
     return (
-        <Label color="grey" title={_("Nothing recent on hardware_interface/gpio_state")}>
+        <Label color="grey" title={_("Nothing recent on hardware_interface/safety_status")}>
             {_("E-Stop not verified")}
         </Label>
     );
@@ -343,7 +343,7 @@ export const RcTab = ({ namespace, namespaceValid }: { namespace: string; namesp
                                                 isPlain
                                                 title={snapshot.eStop === ESTOP_RELEASED
                                                     ? _("Engage the E-Stop to enable calibration.")
-                                                    : _("Cannot reach hardware_interface/gpio_state. Calibration needs rover_hardware_interface running — it is refused rather than assumed safe.")}
+                                                    : _("Cannot reach hardware_interface/safety_status. Calibration needs rover_hardware_interface running — it is refused rather than assumed safe.")}
                                             />
                                         )}
                                         <Checkbox

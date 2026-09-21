@@ -47,7 +47,7 @@ export const PHASE_REVIEW = 3;
 export type Phase = typeof PHASE_IDLE | typeof PHASE_CENTER | typeof PHASE_SWEEP | typeof PHASE_REVIEW;
 
 /**
- * What the node verified about the rover's E-Stop, from hardware_interface/gpio_state. This is
+ * What the node verified about the rover's E-Stop, from hardware_interface/safety_status. This is
  * what actually gates a calibration; the operator's tick is a second, independent condition.
  *
  * UNKNOWN is not "probably fine" - nothing has been received, or the sample is too old to trust -

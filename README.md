@@ -93,7 +93,7 @@ Device URL, and port 8765 only has to be reachable on the robot itself.
   The sweep drives the sticks to full throw, so the page deactivates `rover_crsf_teleop_node`
   through `.../change_state` before starting and reactivates it afterwards. The **E-Stop
   indicator is read from the rover**, not asserted by the page: the node verifies
-  `hardware_interface/gpio_state` itself and reports it on the calibration state topic, Start is
+  `hardware_interface/safety_status` itself and reports it on the calibration state topic, Start is
   enabled only when it says engaged, and an unreachable hardware interface shows as *not
   verified* and refuses rather than being assumed safe. The operator's tick is kept as a second,
   independent condition, and the node enforces both — the page is the convenient path to the
