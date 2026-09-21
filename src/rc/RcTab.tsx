@@ -326,7 +326,7 @@ export const RcTab = ({ namespace, namespaceValid }: { namespace: string; namesp
                                 {phase === PHASE_IDLE && (
                                     <>
                                         <Content component="p">
-                                            {_("The sweep drives the sticks to full throw, and RC teleop is not the only thing that can command this rover. Engage the E-Stop before starting; teleop is taken off the command path for the whole session and put back afterwards.")}
+                                            {_("The sweep drives the sticks to full throw, and RC teleop is not the only thing that can command this rover. Press the physical E-Stop button on the rover before starting — a software E-Stop is not enough, because it can be cleared remotely while you are standing next to the rover. Teleop is taken off the command path for the whole session and put back afterwards.")}
                                         </Content>
                                         <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
                                             <FlexItem><EStopIndicator eStop={snapshot.eStop} /></FlexItem>
@@ -342,7 +342,7 @@ export const RcTab = ({ namespace, namespaceValid }: { namespace: string; namesp
                                                 isInline
                                                 isPlain
                                                 title={snapshot.eStop === ESTOP_RELEASED
-                                                    ? _("Engage the E-Stop to enable calibration.")
+                                                    ? _("Press the physical E-Stop button to enable calibration. A software E-Stop does not count.")
                                                     : _("Cannot reach hardware_interface/safety_status. Calibration needs rover_hardware_interface running — it is refused rather than assumed safe.")}
                                             />
                                         )}
