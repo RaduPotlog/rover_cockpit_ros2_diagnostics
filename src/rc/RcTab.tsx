@@ -429,7 +429,8 @@ export const RcTab = ({ namespace, namespaceValid }: { namespace: string; namesp
                                         ))}
                                         <Checkbox
                                             id="rc-persist"
-                                            label={_("Save it, so it survives a restart")}
+                                            label={_("Save on the rover, so it is kept after a reboot")}
+                                            description={_("Also kept across a container restart or a new release. Unchecked, this calibration is used only until the RC teleop node next restarts; then the last saved one comes back.")}
                                             isChecked={persist}
                                             onChange={(_event, checked) => setPersist(checked)}
                                         />
