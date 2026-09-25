@@ -21,7 +21,7 @@
  * RC receiver state, as rover_crsf_teleop reports it.
  *
  * The node decodes CRSF from the ExpressLRS receiver and echoes every frame on
- * <ns>/rc/channels (16 raw 11-bit counts, ~50 Hz, best effort) with link quality on
+ * <ns>/rc/channels (16 raw 11-bit counts, capped at 25 Hz, best effort) with link quality on
  * <ns>/rc/link. <ns>/rc/calibration/state carries the per-channel calibration in
  * effect plus any calibration session in progress; it is transient-local, so it
  * arrives as soon as the page subscribes.

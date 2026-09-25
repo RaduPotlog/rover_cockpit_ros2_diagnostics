@@ -36,8 +36,10 @@ interface ImageMsg { data: Uint8Array; height?: number }
 
 /**
  * Follow rover_led through the shared bridge connection and return a snapshot,
- * rebuilt every REFRESH_MS. Frames arrive at 50 Hz; only the latest one per
- * channel is kept and it is decoded once per refresh.
+ * rebuilt every REFRESH_MS. Frames come from led/channel_<n>_preview (5 Hz by default,
+ * rover_led's preview_publish_rate), not the 50 Hz led/channel_<n>_frame the LED driver
+ * consumes - the bridge only offers the preview. Only the latest one per channel is kept
+ * and it is decoded once per refresh.
  */
 export const useLedState = (
     namespace: string,
@@ -90,7 +92,7 @@ export const useLedState = (
             subscribe<{ data: number }>(`${namespace}/led/brightness`, "std_msgs/msg/Float32",
                                         msg => { inputs.brightness = msg.data });
             for (const channel of channels) {
-                subscribe<ImageMsg>(`${namespace}/led/channel_${channel}_frame`, "sensor_msgs/msg/Image",
+                subscribe<ImageMsg>(`${namespace}/led/channel_${channel}_preview`, "sensor_msgs/msg/Image",
                                     msg => { rawFrames.set(channel, { msg, at: Date.now() }) });
             }
         }

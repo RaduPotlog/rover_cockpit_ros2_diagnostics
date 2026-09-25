@@ -20,7 +20,8 @@
  *
  * rover_led_controller publishes the loaded animations once on <ns>/led/animations
  * (latched), what every priority layer plays on <ns>/led/state (5 Hz) and one RGBA
- * frame per panel on <ns>/led/channel_<n>_frame (50 Hz), in wire order with one image row
+ * frame per panel on <ns>/led/channel_<n>_frame (50 Hz, for the driver) and a copy on
+ * <ns>/led/channel_<n>_preview (5 Hz, what this page reads), in wire order with one image row
  * per serpentine row of the panel. rover_led_driver reports the
  * global brightness it applies on <ns>/led/brightness (latched). The snapshot merges that
  * with the Husarion reference table so animations the robot has not loaded still

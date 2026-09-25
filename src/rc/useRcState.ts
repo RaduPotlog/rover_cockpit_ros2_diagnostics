@@ -32,8 +32,9 @@ import {
 } from './model';
 
 /**
- * Sticks have to feel live, so this is much shorter than the LEDs tab's 500 ms - but it is still
- * a fifth of the 50 Hz frame rate, so React re-renders five times a second, not fifty.
+ * Sticks have to feel live, so this is much shorter than the LEDs tab's 500 ms. rc/channels
+ * arrives at rover_crsf_teleop's rc_topics_rate_hz (25 Hz shipped), so React re-renders ten
+ * times a second, not twenty-five.
  */
 const REFRESH_MS = 100;
 
@@ -47,7 +48,7 @@ const emptyInputs = (): RcInputs => ({
 
 /**
  * Follow rover_crsf_teleop through the shared bridge connection and return a snapshot, rebuilt
- * every REFRESH_MS. Frames arrive at 50 Hz; only the latest one is kept between refreshes.
+ * every REFRESH_MS. Frames arrive at up to 25 Hz; only the latest one is kept between refreshes.
  *
  * `revision` increments whenever the calibration state changes, so the tab can react to a phase
  * the node decided on - a timeout, say - without polling the snapshot itself.

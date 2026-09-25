@@ -68,7 +68,8 @@ Device URL, and port 8765 only has to be reachable on the robot itself.
   topology to open its history. (Ported from `rover_network_monitor`.)
 - **ROS 2 LEDs**: live `rover_led` state:
   - the animation on top
-  - per-LED colours of both strips, scaled by the global brightness `rover_led_driver`
+  - per-LED colours of both strips from `<namespace>/led/channel_<n>_preview` (5 Hz; the bridge
+    does not offer the 50 Hz `_frame` topics), scaled by the global brightness `rover_led_driver`
     reports on `<namespace>/led/brightness`
   - the priority layers
   - the animation table, which merges `<namespace>/led/animations` with `src/leds/led_reference.json`
@@ -89,7 +90,7 @@ Device URL, and port 8765 only has to be reachable on the robot itself.
 
   Calibration measures each channel's centre and endpoints on the transmitter that is actually
   plugged in. The measurement happens **in the node**, not in the browser: `rc/channels` is
-  best-effort depth 1 at 50 Hz, so a page tracking min/max over the topic would miss the peaks.
+  best-effort depth 1 and capped at 25 Hz, so a page tracking min/max over the topic would miss the peaks.
   The sweep drives the sticks to full throw, so the page deactivates `rover_crsf_teleop_node`
   through `.../change_state` before starting and reactivates it afterwards. The **E-Stop
   indicator is read from the rover**, not asserted by the page: the node verifies
